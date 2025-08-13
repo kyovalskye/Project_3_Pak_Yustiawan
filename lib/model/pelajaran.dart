@@ -9,6 +9,7 @@ class Pelajaran {
   final String? namaHari;
   final String? waktuMulai;
   final String? waktuSelesai;
+  final String? namaGuru; // Added teacher name field
 
   const Pelajaran({
     this.id,
@@ -18,6 +19,7 @@ class Pelajaran {
     this.namaHari,
     this.waktuMulai,
     this.waktuSelesai,
+    this.namaGuru, // Added to constructor
   });
 
   // Factory constructor to create Pelajaran from Supabase data
@@ -47,6 +49,7 @@ class Pelajaran {
       namaHari: data['nama_hari'],
       waktuMulai: waktuMulai,
       waktuSelesai: waktuSelesai,
+      namaGuru: data['nama_guru'], // Get teacher name from database
     );
   }
 
@@ -61,6 +64,7 @@ class Pelajaran {
       'waktu_mulai': waktuMulai,
       'waktu_selesai': waktuSelesai,
       'hex_color': '0x${warna.value.toRadixString(16).toUpperCase()}',
+      'nama_guru': namaGuru, // Include teacher name in map
     };
   }
 }

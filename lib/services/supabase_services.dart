@@ -27,6 +27,7 @@ class SupabaseService {
     required String waktuMulai,
     required String waktuSelesai,
     required String hexColor,
+    String? namaGuru, // Added teacher name parameter
   }) async {
     try {
       await _client.from('jadwal_kegiatan').insert({
@@ -35,6 +36,7 @@ class SupabaseService {
         'waktu_mulai': waktuMulai,
         'waktu_selesai': waktuSelesai,
         'hex_color': hexColor,
+        'nama_guru': namaGuru, // Insert teacher name
         'created_at': DateTime.now().toIso8601String(),
         'updated_at': DateTime.now().toIso8601String(),
       });
@@ -139,6 +141,7 @@ class SupabaseService {
     required String waktuMulai,
     required String waktuSelesai,
     required String hexColor,
+    String? namaGuru, // Added teacher name parameter
   }) async {
     try {
       await _client
@@ -149,6 +152,7 @@ class SupabaseService {
             'waktu_mulai': waktuMulai,
             'waktu_selesai': waktuSelesai,
             'hex_color': hexColor,
+            'nama_guru': namaGuru, // Update teacher name
             'updated_at': DateTime.now().toIso8601String(),
           })
           .eq('id', id);

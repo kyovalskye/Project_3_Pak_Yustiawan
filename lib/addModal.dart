@@ -14,6 +14,8 @@ class AddModal extends StatefulWidget {
 class _AddModalState extends State<AddModal> {
   String? selectedHari;
   final TextEditingController namaController = TextEditingController();
+  final TextEditingController namaGuruController =
+      TextEditingController(); // Added teacher name controller
   final TextEditingController jamMulaiController = TextEditingController();
   final TextEditingController jamBerakhirController = TextEditingController();
   Color selectedColor = const Color(0xFF6366F1);
@@ -126,6 +128,9 @@ class _AddModalState extends State<AddModal> {
       waktuMulai: jamMulaiController.text,
       waktuSelesai: jamBerakhirController.text,
       hexColor: '0x${selectedColor.value.toRadixString(16).toUpperCase()}',
+      namaGuru: namaGuruController.text.trim().isEmpty
+          ? null
+          : namaGuruController.text.trim(), // Pass teacher name if provided
     );
 
     setState(() => isLoading = false);
@@ -217,6 +222,13 @@ class _AddModalState extends State<AddModal> {
                 label: 'Nama Kegiatan',
                 controller: namaController,
                 hint: 'Masukkan nama kegiatan',
+              ),
+              const SizedBox(height: 16),
+
+              _buildTextFieldWithLabel(
+                label: 'Nama Guru (Opsional)',
+                controller: namaGuruController,
+                hint: 'Masukkan nama guru',
               ),
               const SizedBox(height: 16),
 
