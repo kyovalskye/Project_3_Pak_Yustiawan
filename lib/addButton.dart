@@ -1,19 +1,25 @@
 import 'package:flutter/material.dart';
+import 'addModal.dart';
 
-class AddButton extends StatelessWidget {
+class AddButton extends StatefulWidget {
   final Function? onScheduleAdded;
 
   const AddButton({super.key, this.onScheduleAdded});
 
   @override
+  State<AddButton> createState() => _AddButtonState();
+}
+
+class _AddButtonState extends State<AddButton> {
+  @override
   Widget build(BuildContext context) {
     return Center(
       child: ElevatedButton(
         onPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Fitur tambah jadwal dinonaktifkan dalam demo'),
-            ),
+          showDialog(
+            context: context,
+            builder: (context) =>
+                AddModal(onScheduleAdded: widget.onScheduleAdded),
           );
         },
         style: ElevatedButton.styleFrom(

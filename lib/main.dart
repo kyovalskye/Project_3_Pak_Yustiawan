@@ -1,8 +1,14 @@
+// main.dart
 import 'package:flutter/material.dart';
 import 'header.dart';
 import 'body.dart';
+import 'supabase/supabase_connect.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await DatabaseConfig.initialize();
+
   runApp(const MyApp());
 }
 

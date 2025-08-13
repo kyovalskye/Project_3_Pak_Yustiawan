@@ -1,7 +1,9 @@
+// body.dart
 import 'package:flutter/material.dart';
 import 'card.dart';
 import 'model/pelajaran.dart';
 import 'addButton.dart';
+import 'services/supabase_services.dart';
 
 class Body extends StatefulWidget {
   const Body({super.key});
@@ -12,7 +14,8 @@ class Body extends StatefulWidget {
 
 class _BodyState extends State<Body> {
   Map<String, List<Pelajaran>> jadwal = {};
-  bool isLoading = false;
+  bool isLoading = true;
+  String? errorMessage;
 
   final List<String> hariList = [
     'Senin',
@@ -26,72 +29,59 @@ class _BodyState extends State<Body> {
   @override
   void initState() {
     super.initState();
-    _loadDummyData();
+    _loadJadwal();
   }
 
-  void _loadDummyData() {
-    final dummyData = {
-      'Senin': [
-        Pelajaran(
-          id: 1,
-          nama: 'Matematika',
-          jam: '08:00 - 09:30',
-          warna: Colors.blue,
-          namaHari: 'Senin',
-          waktuMulai: '08:00',
-          waktuSelesai: '09:30',
-        ),
-        Pelajaran(
-          id: 2,
-          nama: 'Fisika',
-          jam: '10:00 - 11:30',
-          warna: Colors.red,
-          namaHari: 'Senin',
-          waktuMulai: '10:00',
-          waktuSelesai: '11:30',
-        ),
-      ],
-      'Selasa': [
-        Pelajaran(
-          id: 3,
-          nama: 'Bahasa Inggris',
-          jam: '09:00 - 10:30',
-          warna: Colors.green,
-          namaHari: 'Selasa',
-          waktuMulai: '09:00',
-          waktuSelesai: '10:30',
-        ),
-      ],
-      'Rabu': [
-        Pelajaran(
-          id: 4,
-          nama: 'Kimia',
-          jam: '08:30 - 10:00',
-          warna: Colors.purple,
-          namaHari: 'Rabu',
-          waktuMulai: '08:30',
-          waktuSelesai: '10:00',
-        ),
-        Pelajaran(
-          id: 5,
-          nama: 'Biologi',
-          jam: '13:00 - 14:30',
-          warna: Colors.teal,
-          namaHari: 'Rabu',
-          waktuMulai: '13:00',
-          waktuSelesai: '14:30',
-        ),
-      ],
-    };
-
+  Future<void> _loadJadwal() async {
     setState(() {
-      jadwal = dummyData;
+      isLoading = true;
+      errorMessage = null;
     });
+
+    try {
+      final data = await SupabaseService.getAllJadwal();
+
+      // Group data by hari
+      final Map<String, List<Pelajaran>> groupedJadwal = {};
+
+      // Initialize all days with empty lists
+      for (final hari in hariList) {
+        groupedJadwal[hari] = [];
+      }
+
+      // Group the data
+      for (final item in data) {
+        final pelajaran = Pelajaran.fromSupabase(item);
+        final hari = pelajaran.namaHari ?? '';
+
+        if (groupedJadwal.containsKey(hari)) {
+          groupedJadwal[hari]!.add(pelajaran);
+        }
+      }
+
+      // Sort each day's schedule by time
+      groupedJadwal.forEach((hari, pelajaranList) {
+        pelajaranList.sort((a, b) {
+          final aTime = a.waktuMulai ?? '00:00';
+          final bTime = b.waktuMulai ?? '00:00';
+          return aTime.compareTo(bTime);
+        });
+      });
+
+      setState(() {
+        jadwal = groupedJadwal;
+        isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        errorMessage = 'Gagal memuat jadwal: ${e.toString()}';
+        isLoading = false;
+      });
+    }
   }
 
   void _onScheduleAdded() {
-    // For demo purposes, we'll just reload the dummy data
-    _loadDummyData();
+    _loadJadwal(); // Reload data when new schedule is added
   }
 
   @override
@@ -101,7 +91,7 @@ class _BodyState extends State<Body> {
         Container(
           color: const Color(0xFFfaf3f4),
           child: RefreshIndicator(
-            onRefresh: () async => _loadDummyData(),
+            onRefresh: _loadJadwal,
             child: _buildContent(),
           ),
         ),
@@ -115,6 +105,42 @@ class _BodyState extends State<Body> {
   }
 
   Widget _buildContent() {
+    if (isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(color: Color(0xFF4A4877)),
+      );
+    }
+
+    if (errorMessage != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 64, color: Colors.red[400]),
+            const SizedBox(height: 16),
+            Text(
+              errorMessage!,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.red[600],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadJadwal,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF4A4877),
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Coba Lagi'),
+            ),
+          ],
+        ),
+      );
+    }
+
     // Check if all schedules are empty
     final hasAnySchedule = jadwal.values.any((list) => list.isNotEmpty);
 
@@ -148,7 +174,12 @@ class _BodyState extends State<Body> {
       children: jadwal.entries.where((entry) => entry.value.isNotEmpty).map((
         entry,
       ) {
-        return HariCard(title: entry.key, pelajaran: entry.value);
+        return HariCard(
+          title: entry.key,
+          pelajaran: entry.value,
+          onScheduleChanged:
+              _onScheduleAdded, // Add callback for updates/deletes
+        );
       }).toList(),
     );
   }

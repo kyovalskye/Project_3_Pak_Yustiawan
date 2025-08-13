@@ -5,11 +5,8 @@ class EditModal extends StatefulWidget {
   final Pelajaran pelajaran;
   final String hari;
 
-  const EditModal({
-    Key? key,
-    required this.pelajaran,
-    required this.hari,
-  }) : super(key: key);
+  const EditModal({Key? key, required this.pelajaran, required this.hari})
+    : super(key: key);
 
   @override
   State<EditModal> createState() => _EditModalState();
@@ -45,10 +42,7 @@ class _EditModalState extends State<EditModal> {
         children: [
           const Text(
             'Edit Jadwal',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 20),
           TextField(

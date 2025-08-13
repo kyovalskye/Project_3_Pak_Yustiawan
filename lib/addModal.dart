@@ -1,8 +1,9 @@
 // addModal.dart
 import 'package:flutter/material.dart';
+import 'services/supabase_services.dart';
 
 class AddModal extends StatefulWidget {
-  final Function(Map<String, dynamic>)? onScheduleAdded;
+  final Function? onScheduleAdded;
 
   const AddModal({super.key, this.onScheduleAdded});
 
@@ -53,13 +54,13 @@ class _AddModalState extends State<AddModal> {
     return TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
   }
 
-  void _handleSave() {
+  Future<void> _handleSave() async {
     setState(() {
       errorMessage = null;
       isLoading = true;
     });
 
-    // Validasi
+    // Validation
     if (selectedHari == null) {
       setState(() {
         errorMessage = 'Pilih hari terlebih dahulu';
@@ -95,9 +96,7 @@ class _AddModalState extends State<AddModal> {
     final startTime = _parseTime(jamMulaiController.text);
     final endTime = _parseTime(jamBerakhirController.text);
 
-    if (endTime.hour < startTime.hour ||
-        (endTime.hour == startTime.hour &&
-            endTime.minute <= startTime.minute)) {
+    if (endTime.isBefore(startTime)) {
       setState(() {
         errorMessage = 'Jam berakhir harus setelah jam mulai';
         isLoading = false;
@@ -105,32 +104,52 @@ class _AddModalState extends State<AddModal> {
       return;
     }
 
-    // Buat data baru
-    final newSchedule = {
-      'id': DateTime.now().millisecondsSinceEpoch, // ID unik sementara
-      'nama_kegiatan': namaController.text.trim(),
-      'nama_hari': selectedHari!,
-      'waktu_mulai': jamMulaiController.text,
-      'waktu_selesai': jamBerakhirController.text,
-      'hex_color': '0x${selectedColor.value.toRadixString(16).toUpperCase()}',
-    };
+    // Check for conflicts using Supabase
+    final hasConflict = await SupabaseService.checkScheduleConflict(
+      namaHari: selectedHari!,
+      waktuMulai: jamMulaiController.text,
+      waktuSelesai: jamBerakhirController.text,
+    );
 
-    // Panggil callback untuk menambahkan jadwal
-    if (widget.onScheduleAdded != null) {
-      widget.onScheduleAdded!(newSchedule);
+    if (hasConflict) {
+      setState(() {
+        errorMessage = 'Sudah ada jadwal di hari dan waktu yang sama';
+        isLoading = false;
+      });
+      return;
     }
+
+    // Save to Supabase
+    final success = await SupabaseService.addJadwal(
+      namaHari: selectedHari!,
+      namaKegiatan: namaController.text.trim(),
+      waktuMulai: jamMulaiController.text,
+      waktuSelesai: jamBerakhirController.text,
+      hexColor: '0x${selectedColor.value.toRadixString(16).toUpperCase()}',
+    );
 
     setState(() => isLoading = false);
 
-    Navigator.pop(context, true);
+    if (success) {
+      // Call callback to refresh data
+      if (widget.onScheduleAdded != null) {
+        widget.onScheduleAdded!();
+      }
 
-    // Tampilkan pesan sukses
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Jadwal berhasil ditambahkan!'),
-        backgroundColor: Colors.green,
-      ),
-    );
+      Navigator.pop(context, true);
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Jadwal berhasil ditambahkan!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } else {
+      setState(() {
+        errorMessage = 'Gagal menyimpan jadwal. Silakan coba lagi.';
+      });
+    }
   }
 
   @override

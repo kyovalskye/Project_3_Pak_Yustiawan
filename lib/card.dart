@@ -1,17 +1,247 @@
 import 'package:flutter/material.dart';
 import 'model/pelajaran.dart';
+import 'services/supabase_services.dart';
 
 class HariCard extends StatelessWidget {
   final String title;
   final List<Pelajaran> pelajaran;
   final Function? onScheduleChanged;
 
-  const HariCard({
+  HariCard({
     super.key,
     required this.title,
     required this.pelajaran,
     this.onScheduleChanged,
   });
+
+  final List<String> _hariList = [
+    'Senin',
+    'Selasa',
+    'Rabu',
+    'Kamis',
+    'Jumat',
+    'Sabtu',
+    'Minggu',
+  ];
+
+  Future<void> _deleteSchedule(
+    BuildContext context,
+    Pelajaran pelajaran,
+  ) async {
+    if (pelajaran.id == null) return;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          'Hapus Jadwal',
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
+        content: Text(
+          'Apakah Anda yakin ingin menghapus jadwal "${pelajaran.nama}"?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      final success = await SupabaseService.deleteJadwal(pelajaran.id!);
+      if (success) {
+        onScheduleChanged?.call();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Jadwal berhasil dihapus!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Gagal menghapus jadwal!'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showEditDialog(BuildContext context, Pelajaran item) {
+    final namaController = TextEditingController(text: item.nama);
+    final mulaiController = TextEditingController(text: item.waktuMulai);
+    final selesaiController = TextEditingController(text: item.waktuSelesai);
+    String selectedHari = item.namaHari ?? _hariList.first;
+    Color selectedColor = item.warna;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) => AlertDialog(
+            title: const Text('Edit Jadwal'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Pilih Hari
+                  DropdownButtonFormField<String>(
+                    value: selectedHari,
+                    items: _hariList.map((hari) {
+                      return DropdownMenuItem(value: hari, child: Text(hari));
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value != null) setState(() => selectedHari = value);
+                    },
+                    decoration: const InputDecoration(labelText: 'Pilih Hari'),
+                  ),
+                  const SizedBox(height: 8),
+
+                  // Nama kegiatan
+                  TextField(
+                    controller: namaController,
+                    decoration: const InputDecoration(
+                      labelText: 'Nama Kegiatan',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+
+                  // Jam mulai
+                  TextField(
+                    controller: mulaiController,
+                    decoration: const InputDecoration(
+                      labelText: 'Waktu Mulai (HH:MM)',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+
+                  // Jam selesai
+                  TextField(
+                    controller: selesaiController,
+                    decoration: const InputDecoration(
+                      labelText: 'Waktu Selesai (HH:MM)',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+
+                  // Pilih warna
+                  Row(
+                    children: [
+                      const Text('Pilih Warna:'),
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: () async {
+                          final picked = await showDialog<Color>(
+                            context: context,
+                            builder: (context) {
+                              final colors = [
+                                Colors.red,
+                                Colors.blue,
+                                Colors.green,
+                                Colors.orange,
+                                Colors.purple,
+                                Colors.pink,
+                                Colors.teal,
+                              ];
+                              return AlertDialog(
+                                title: const Text('Pilih Warna'),
+                                content: Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: colors.map((c) {
+                                    return GestureDetector(
+                                      onTap: () => Navigator.pop(context, c),
+                                      child: Container(
+                                        width: 30,
+                                        height: 30,
+                                        decoration: BoxDecoration(
+                                          color: c,
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: Colors.black26,
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                              );
+                            },
+                          );
+                          if (picked != null) {
+                            setState(() => selectedColor = picked);
+                          }
+                        },
+                        child: Container(
+                          width: 30,
+                          height: 30,
+                          decoration: BoxDecoration(
+                            color: selectedColor,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.black26),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Batal'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  final success = await SupabaseService.updateJadwal(
+                    id: item.id!,
+                    namaHari: selectedHari,
+                    namaKegiatan: namaController.text,
+                    waktuMulai: mulaiController.text,
+                    waktuSelesai: selesaiController.text,
+                    hexColor:
+                        '#${selectedColor.value.toRadixString(16).substring(2)}',
+                  );
+
+                  if (success) {
+                    onScheduleChanged?.call();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Jadwal berhasil diupdate!'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Gagal mengupdate jadwal!'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                  Navigator.pop(context);
+                },
+                child: const Text('Simpan'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -157,6 +387,55 @@ class HariCard extends StatelessWidget {
                           ),
                         ],
                       ),
+                    ),
+                    trailing: PopupMenuButton<String>(
+                      icon: Icon(Icons.more_vert, color: Colors.grey[600]),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      itemBuilder: (context) => [
+                        PopupMenuItem(
+                          value: 'edit',
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.edit,
+                                color: Colors.blue,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              const Text(
+                                'Edit',
+                                style: TextStyle(color: Colors.blue),
+                              ),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'delete',
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.delete_outline,
+                                color: Colors.red,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              const Text(
+                                'Hapus',
+                                style: TextStyle(color: Colors.red),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                      onSelected: (value) {
+                        if (value == 'edit') {
+                          _showEditDialog(context, item);
+                        } else if (value == 'delete') {
+                          _deleteSchedule(context, item);
+                        }
+                      },
                     ),
                   ),
                 );
