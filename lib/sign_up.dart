@@ -3,19 +3,17 @@ import 'package:flutter/material.dart';
 class SignUp extends StatefulWidget {
   const SignUp({super.key});
 
-  
-
   @override
   State<SignUp> createState() => _SignUpState();
 }
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
 
-  bool _obscureText = true;
+final TextEditingController _emailController = TextEditingController();
+final TextEditingController _passwordController = TextEditingController();
 
+bool _obscureText = true;
 
 class _SignUpState extends State<SignUp> {
- @override
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF4A4877),
@@ -42,10 +40,7 @@ class _SignUpState extends State<SignUp> {
               width: double.infinity,
               decoration: const BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(80),
-               
-                ),
+                borderRadius: BorderRadius.only(topLeft: Radius.circular(80)),
               ),
               child: Padding(
                 padding: const EdgeInsets.only(right: 20, left: 20, top: 50),
@@ -57,9 +52,10 @@ class _SignUpState extends State<SignUp> {
                       child: Text(
                         'Sign in to continue',
                         style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.grey),
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 60),
@@ -67,8 +63,10 @@ class _SignUpState extends State<SignUp> {
                     // Email
                     const Text(
                       'Email',
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 25),
                     TextField(
@@ -84,8 +82,10 @@ class _SignUpState extends State<SignUp> {
                     // Password
                     const Text(
                       'Password',
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 20),
                     TextField(
@@ -119,20 +119,22 @@ class _SignUpState extends State<SignUp> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Color(0xFF4A4877),
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 100, vertical: 25),
+                          horizontal: 100,
+                          vertical: 25,
+                        ),
                         textStyle: const TextStyle(fontSize: 20),
                       ),
                       child: const Text(
                         'Sign up',
                         style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white),
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
 
                     const Spacer(), // Dorong teks ke bawah
-
                     // Teks di bawah
                     Padding(
                       padding: const EdgeInsets.only(bottom: 20),
