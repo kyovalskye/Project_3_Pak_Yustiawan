@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'header.dart';
 import 'body.dart';
 import 'supabase/supabase_connect.dart';
+import 'login.dart'; // ✅ import login page
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,7 +22,20 @@ class MyApp extends StatelessWidget {
       title: 'Jadwal Kegiatan',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(primarySwatch: Colors.blue),
-      home: const Scaffold(body: Body(), appBar: Header()),
+      home: const Login(), // ✅ tampilkan login dulu
+    );
+  }
+}
+
+// ✅ Buat halaman utama terpisah
+class HomePage extends StatelessWidget {
+  const HomePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      appBar: Header(),
+      body: Body(),
     );
   }
 }
