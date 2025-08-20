@@ -1,9 +1,9 @@
 // body.dart
 import 'package:flutter/material.dart';
-import 'card.dart';
-import 'model/pelajaran.dart';
-import 'addButton.dart';
-import 'services/supabase_services.dart';
+import '../widgets/card.dart';
+import '../model/pelajaran.dart';
+import '../widgets/addButton.dart';
+import '../services/supabase_services.dart';
 
 class Body extends StatefulWidget {
   const Body({super.key});

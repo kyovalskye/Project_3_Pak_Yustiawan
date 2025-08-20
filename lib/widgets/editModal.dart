@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'model/pelajaran.dart';
+import '../model/pelajaran.dart';
 
 class EditModal extends StatefulWidget {
   final Pelajaran pelajaran;

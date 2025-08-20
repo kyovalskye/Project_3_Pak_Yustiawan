@@ -1,7 +1,6 @@
-// card.dart
 import 'package:flutter/material.dart';
-import 'model/pelajaran.dart';
-import 'services/supabase_services.dart';
+import '../model/pelajaran.dart';
+import '../services/supabase_services.dart';
 
 class HariCard extends StatelessWidget {
   final String title;
@@ -82,7 +81,9 @@ class HariCard extends StatelessWidget {
 
   void _showEditDialog(BuildContext context, Pelajaran item) {
     final namaController = TextEditingController(text: item.nama);
-    final namaGuruController = TextEditingController(text: item.namaGuru ?? ''); // Added teacher name controller
+    final namaGuruController = TextEditingController(
+      text: item.namaGuru ?? '',
+    ); // Added teacher name controller
     final mulaiController = TextEditingController(text: item.waktuMulai);
     final selesaiController = TextEditingController(text: item.waktuSelesai);
     String selectedHari = item.namaHari ?? _hariList.first;
@@ -225,7 +226,9 @@ class HariCard extends StatelessWidget {
                     waktuSelesai: selesaiController.text,
                     hexColor:
                         '#${selectedColor.value.toRadixString(16).substring(2)}',
-                    namaGuru: namaGuruController.text.trim().isEmpty ? null : namaGuruController.text.trim(), // Pass teacher name
+                    namaGuru: namaGuruController.text.trim().isEmpty
+                        ? null
+                        : namaGuruController.text.trim(), // Pass teacher name
                   );
 
                   if (success) {
@@ -385,7 +388,8 @@ class HariCard extends StatelessWidget {
                       child: Row(
                         children: [
                           // Teacher name section - positioned on the left
-                          if (item.namaGuru != null && item.namaGuru!.isNotEmpty) ...[
+                          if (item.namaGuru != null &&
+                              item.namaGuru!.isNotEmpty) ...[
                             Icon(
                               Icons.person,
                               size: 14,

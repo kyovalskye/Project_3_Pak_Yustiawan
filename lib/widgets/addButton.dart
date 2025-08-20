@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'addModal.dart';
+import 'package:flutter_project3/widgets/addModal.dart';
 
 class AddButton extends StatefulWidget {
   final Function? onScheduleAdded;

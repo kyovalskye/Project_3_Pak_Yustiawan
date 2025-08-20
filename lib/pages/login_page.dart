@@ -1,5 +1,10 @@
+// login.dart
 import 'package:flutter/material.dart';
-import 'package:flutter_project3/sign_up.dart';
+import 'package:flutter_project3/pages/signup_page.dart';
+import 'package:flutter_project3/services/user_service.dart';
+import 'package:flutter_project3/services/user_session.dart';
+import 'package:flutter_project3/widgets/header.dart';
+import 'package:flutter_project3/pages/body.dart';
 
 // Halaman Login
 class Login extends StatefulWidget {
@@ -10,10 +15,66 @@ class Login extends StatefulWidget {
 }
 
 class _LoginState extends State<Login> {
-  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _namaController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
   bool _obscureText = true;
+  bool _isLoading = false;
+
+  Future<void> _handleLogin() async {
+    final nama = _namaController.text.trim();
+    final password = _passwordController.text;
+
+    if (nama.isEmpty || password.isEmpty) {
+      _showSnackBar('Nama dan password harus diisi', Colors.red);
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final result = await DatabaseService.loginUser(
+        nama: nama,
+        password: password,
+      );
+
+      if (result['success']) {
+        // Set user session
+        UserSession.setCurrentUser(result['user']);
+
+        _showSnackBar('Login berhasil!', Colors.green);
+
+        // Navigate to main page
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) =>
+                const Scaffold(body: Body(), appBar: Header()),
+          ),
+        );
+      } else {
+        _showSnackBar(result['message'], Colors.red);
+      }
+    } catch (e) {
+      _showSnackBar('Terjadi kesalahan sistem', Colors.red);
+    }
+
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
+  void _showSnackBar(String message, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: color,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,19 +126,22 @@ class _LoginState extends State<Login> {
                     ),
                     const SizedBox(height: 60),
 
-                    // Email
+                    // Nama
                     const Text(
-                      'Email',
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      'Nama',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 25),
                     TextField(
-                      controller: _emailController,
+                      controller: _namaController,
                       decoration: InputDecoration(
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(15.0),
                         ),
+                        hintText: 'Masukkan nama Anda',
                       ),
                     ),
                     const SizedBox(height: 30),
@@ -85,8 +149,10 @@ class _LoginState extends State<Login> {
                     // Password
                     const Text(
                       'Password',
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 20),
                     TextField(
@@ -96,6 +162,7 @@ class _LoginState extends State<Login> {
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(15.0),
                         ),
+                        hintText: 'Masukkan password Anda',
                         suffixIcon: IconButton(
                           icon: Icon(
                             _obscureText
@@ -114,9 +181,7 @@ class _LoginState extends State<Login> {
 
                     // Tombol Login
                     ElevatedButton(
-                      onPressed: () {
-                        // Fungsi login nanti
-                      },
+                      onPressed: _isLoading ? null : _handleLogin,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF4A4877),
                         padding: const EdgeInsets.symmetric(
@@ -125,18 +190,22 @@ class _LoginState extends State<Login> {
                         ),
                         textStyle: const TextStyle(fontSize: 20),
                       ),
-                      child: const Text(
-                        'Login',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
+                      child: _isLoading
+                          ? const CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            )
+                          : const Text(
+                              'Login',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
                     ),
 
                     const Spacer(), // Dorong teks ke bawah
-
                     // Teks di bawah
                     Padding(
                       padding: const EdgeInsets.only(bottom: 20),
@@ -151,7 +220,7 @@ class _LoginState extends State<Login> {
                         },
                         child: const Center(
                           child: Text(
-                            "Don’t have an account? Sign up",
+                            "Don't have an account? Sign up",
                             style: TextStyle(
                               fontSize: 16,
                               color: Colors.grey,

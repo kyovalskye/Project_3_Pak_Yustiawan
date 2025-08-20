@@ -1,4 +1,4 @@
-// services/supabase_service.dart
+//supabase_services.dart
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SupabaseService {
