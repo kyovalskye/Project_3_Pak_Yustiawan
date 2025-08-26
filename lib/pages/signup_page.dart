@@ -1,4 +1,4 @@
-// sign_up.dart
+// signup_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_project3/services/user_service.dart';
 import 'package:flutter_project3/services/user_session.dart';
@@ -14,6 +14,7 @@ class SignUp extends StatefulWidget {
 
 class _SignUpState extends State<SignUp> {
   final TextEditingController _namaController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
       TextEditingController();
@@ -24,16 +25,25 @@ class _SignUpState extends State<SignUp> {
 
   Future<void> _handleSignUp() async {
     final nama = _namaController.text.trim();
+    final email = _emailController.text.trim();
     final password = _passwordController.text;
     final confirmPassword = _confirmPasswordController.text;
 
-    if (nama.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
+    if (nama.isEmpty ||
+        email.isEmpty ||
+        password.isEmpty ||
+        confirmPassword.isEmpty) {
       _showSnackBar('Semua field harus diisi', Colors.red);
       return;
     }
 
     if (nama.length < 3) {
       _showSnackBar('Nama harus minimal 3 karakter', Colors.red);
+      return;
+    }
+
+    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
+      _showSnackBar('Masukkan email yang valid', Colors.red);
       return;
     }
 
@@ -54,16 +64,13 @@ class _SignUpState extends State<SignUp> {
     try {
       final result = await DatabaseService.registerUser(
         nama: nama,
+        email: email,
         password: password,
       );
 
       if (result['success']) {
-        // Set user session
         UserSession.setCurrentUser(result['user']);
-
         _showSnackBar('Akun berhasil dibuat!', Colors.green);
-
-        // Navigate to main page
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -99,7 +106,6 @@ class _SignUpState extends State<SignUp> {
       backgroundColor: const Color(0xFF4A4877),
       body: Column(
         children: [
-          // Bagian biru header
           Container(
             height: 250,
             width: double.infinity,
@@ -113,8 +119,6 @@ class _SignUpState extends State<SignUp> {
               ),
             ),
           ),
-
-          // Bagian putih form
           Expanded(
             child: Container(
               width: double.infinity,
@@ -140,8 +144,6 @@ class _SignUpState extends State<SignUp> {
                         ),
                       ),
                       const SizedBox(height: 40),
-
-                      // Nama
                       const Text(
                         'Nama',
                         style: TextStyle(
@@ -160,8 +162,24 @@ class _SignUpState extends State<SignUp> {
                         ),
                       ),
                       const SizedBox(height: 20),
-
-                      // Password
+                      const Text(
+                        'Email',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 15),
+                      TextField(
+                        controller: _emailController,
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(15.0),
+                          ),
+                          hintText: 'Masukkan email Anda',
+                        ),
+                      ),
+                      const SizedBox(height: 20),
                       const Text(
                         'Password',
                         style: TextStyle(
@@ -193,8 +211,6 @@ class _SignUpState extends State<SignUp> {
                         ),
                       ),
                       const SizedBox(height: 20),
-
-                      // Confirm Password
                       const Text(
                         'Konfirmasi Password',
                         style: TextStyle(
@@ -226,8 +242,6 @@ class _SignUpState extends State<SignUp> {
                         ),
                       ),
                       const SizedBox(height: 40),
-
-                      // Tombol Sign Up
                       ElevatedButton(
                         onPressed: _isLoading ? null : _handleSignUp,
                         style: ElevatedButton.styleFrom(
@@ -252,10 +266,7 @@ class _SignUpState extends State<SignUp> {
                                 ),
                               ),
                       ),
-
                       const SizedBox(height: 40),
-
-                      // Teks di bawah
                       GestureDetector(
                         onTap: () {
                           Navigator.pop(context);

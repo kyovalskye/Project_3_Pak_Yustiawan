@@ -1,3 +1,4 @@
+//card.dart
 import 'package:flutter/material.dart';
 import '../model/pelajaran.dart';
 import '../services/supabase_services.dart';

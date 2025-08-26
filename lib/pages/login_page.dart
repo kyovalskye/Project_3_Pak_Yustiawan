@@ -1,4 +1,4 @@
-// login.dart
+// login_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_project3/pages/signup_page.dart';
 import 'package:flutter_project3/services/user_service.dart';
@@ -6,7 +6,6 @@ import 'package:flutter_project3/services/user_session.dart';
 import 'package:flutter_project3/widgets/header.dart';
 import 'package:flutter_project3/pages/body.dart';
 
-// Halaman Login
 class Login extends StatefulWidget {
   const Login({super.key});
 
@@ -15,18 +14,23 @@ class Login extends StatefulWidget {
 }
 
 class _LoginState extends State<Login> {
-  final TextEditingController _namaController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
   bool _obscureText = true;
   bool _isLoading = false;
 
   Future<void> _handleLogin() async {
-    final nama = _namaController.text.trim();
+    final email = _emailController.text.trim();
     final password = _passwordController.text;
 
-    if (nama.isEmpty || password.isEmpty) {
-      _showSnackBar('Nama dan password harus diisi', Colors.red);
+    if (email.isEmpty || password.isEmpty) {
+      _showSnackBar('Email dan password harus diisi', Colors.red);
+      return;
+    }
+
+    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
+      _showSnackBar('Masukkan email yang valid', Colors.red);
       return;
     }
 
@@ -36,17 +40,13 @@ class _LoginState extends State<Login> {
 
     try {
       final result = await DatabaseService.loginUser(
-        nama: nama,
+        email: email,
         password: password,
       );
 
       if (result['success']) {
-        // Set user session
         UserSession.setCurrentUser(result['user']);
-
         _showSnackBar('Login berhasil!', Colors.green);
-
-        // Navigate to main page
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -82,7 +82,6 @@ class _LoginState extends State<Login> {
       backgroundColor: const Color(0xFF4A4877),
       body: Column(
         children: [
-          // Bagian biru header
           Container(
             height: 250,
             width: double.infinity,
@@ -96,8 +95,6 @@ class _LoginState extends State<Login> {
               ),
             ),
           ),
-
-          // Bagian putih form
           Expanded(
             child: Container(
               width: double.infinity,
@@ -125,10 +122,8 @@ class _LoginState extends State<Login> {
                       ),
                     ),
                     const SizedBox(height: 60),
-
-                    // Nama
                     const Text(
-                      'Nama',
+                      'Email',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -136,17 +131,15 @@ class _LoginState extends State<Login> {
                     ),
                     const SizedBox(height: 25),
                     TextField(
-                      controller: _namaController,
+                      controller: _emailController,
                       decoration: InputDecoration(
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(15.0),
                         ),
-                        hintText: 'Masukkan nama Anda',
+                        hintText: 'Masukkan email Anda',
                       ),
                     ),
                     const SizedBox(height: 30),
-
-                    // Password
                     const Text(
                       'Password',
                       style: TextStyle(
@@ -178,8 +171,6 @@ class _LoginState extends State<Login> {
                       ),
                     ),
                     const SizedBox(height: 40),
-
-                    // Tombol Login
                     ElevatedButton(
                       onPressed: _isLoading ? null : _handleLogin,
                       style: ElevatedButton.styleFrom(
@@ -204,9 +195,7 @@ class _LoginState extends State<Login> {
                               ),
                             ),
                     ),
-
-                    const Spacer(), // Dorong teks ke bawah
-                    // Teks di bawah
+                    const Spacer(),
                     Padding(
                       padding: const EdgeInsets.only(bottom: 20),
                       child: GestureDetector(

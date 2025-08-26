@@ -1,46 +1,47 @@
+// user_services.dart
 import 'package:flutter_project3/supabase/supabase_connect.dart';
 import 'package:crypto/crypto.dart';
 import 'dart:convert';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:io';
 
 class DatabaseService {
   static get _client => DatabaseConfig.client;
 
-  // Hash password menggunakan SHA-256
   static String _hashPassword(String password) {
     var bytes = utf8.encode(password);
     var digest = sha256.convert(bytes);
     return digest.toString();
   }
 
-  // Registrasi user baru
   static Future<Map<String, dynamic>> registerUser({
     required String nama,
+    required String email,
     required String password,
   }) async {
     try {
-      // Cek apakah user sudah ada
       final existingUser = await _client
-          .from('user')
-          .select('id, nama')
-          .eq('nama', nama)
+          .from('users')
+          .select('user_id, email')
+          .eq('email', email)
           .maybeSingle();
 
       if (existingUser != null) {
-        return {
-          'success': false,
-          'message': 'Nama pengguna sudah digunakan',
-        };
+        return {'success': false, 'message': 'Email sudah digunakan'};
       }
 
-      // Hash password
       final hashedPassword = _hashPassword(password);
 
-      // Insert user baru
-      final response = await _client.from('user').insert({
-        'nama': nama,
-        'password': hashedPassword,
-        'created_at': DateTime.now().toIso8601String(),
-      }).select('id, nama, created_at').single();
+      final response = await _client
+          .from('users')
+          .insert({
+            'nama': nama,
+            'email': email,
+            'password': hashedPassword,
+            'created_at': DateTime.now().toIso8601String(),
+          })
+          .select('user_id, nama, email, created_at')
+          .single();
 
       return {
         'success': true,
@@ -49,20 +50,12 @@ class DatabaseService {
       };
     } catch (e) {
       print('Error registering user: $e');
-      
-      // Handle specific errors
       if (e.toString().contains('duplicate key')) {
-        return {
-          'success': false,
-          'message': 'Nama pengguna sudah digunakan',
-        };
-      } else if (e.toString().contains('relation') && e.toString().contains('does not exist')) {
-        return {
-          'success': false,
-          'message': 'Tabel database tidak ditemukan',
-        };
+        return {'success': false, 'message': 'Email sudah digunakan'};
+      } else if (e.toString().contains('relation') &&
+          e.toString().contains('does not exist')) {
+        return {'success': false, 'message': 'Tabel database tidak ditemukan'};
       }
-      
       return {
         'success': false,
         'message': 'Terjadi kesalahan saat membuat akun: ${e.toString()}',
@@ -70,35 +63,25 @@ class DatabaseService {
     }
   }
 
-  // Login user
   static Future<Map<String, dynamic>> loginUser({
-    required String nama,
+    required String email,
     required String password,
   }) async {
     try {
-      // Hash password untuk pencocokan
       final hashedPassword = _hashPassword(password);
 
-      // Cari user dengan nama dan password yang cocok
       final user = await _client
-          .from('user')
-          .select('id, nama, created_at')
-          .eq('nama', nama)
+          .from('users')
+          .select('user_id, nama, email, created_at, profile_picture')
+          .eq('email', email)
           .eq('password', hashedPassword)
           .maybeSingle();
 
       if (user == null) {
-        return {
-          'success': false,
-          'message': 'Nama pengguna atau password salah',
-        };
+        return {'success': false, 'message': 'Email atau password salah'};
       }
 
-      return {
-        'success': true,
-        'message': 'Login berhasil',
-        'user': user,
-      };
+      return {'success': true, 'message': 'Login berhasil', 'user': user};
     } catch (e) {
       print('Error logging in user: $e');
       return {
@@ -108,19 +91,72 @@ class DatabaseService {
     }
   }
 
-  // Get user by ID
-  static Future<Map<String, dynamic>?> getUserById(int id) async {
+  static Future<Map<String, dynamic>?> getUserById(String userId) async {
     try {
       final user = await _client
-          .from('user')
-          .select('id, nama, created_at')
-          .eq('id', id)
+          .from('users')
+          .select('user_id, nama, email, created_at, profile_picture')
+          .eq('user_id', userId)
           .maybeSingle();
 
       return user;
     } catch (e) {
       print('Error getting user: $e');
       return null;
+    }
+  }
+
+  static Future<String?> uploadProfilePicture(
+    String userId,
+    String filePath,
+  ) async {
+    try {
+      final fileName =
+          '$userId/profile_picture_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      await _client.storage
+          .from('profile_pictures')
+          .upload(
+            fileName,
+            File(filePath),
+            fileOptions: const FileOptions(upsert: true),
+          );
+
+      final signedUrl = await _client.storage
+          .from('profile_pictures')
+          .createSignedUrl(
+            fileName,
+            60 * 60 * 24 * 365, // URL berlaku selama 1 tahun
+          );
+
+      await _client
+          .from('users')
+          .update({'profile_picture': signedUrl})
+          .eq('user_id', userId);
+
+      return signedUrl;
+    } catch (e) {
+      print('Error uploading profile picture: $e');
+      return null;
+    }
+  }
+
+  static Future<bool> updateUserProfile({
+    required String userId,
+    required String nama,
+    String? profilePictureUrl,
+  }) async {
+    try {
+      final updates = {
+        'nama': nama,
+        'updated_at': DateTime.now().toIso8601String(),
+        if (profilePictureUrl != null) 'profile_picture': profilePictureUrl,
+      };
+
+      await _client.from('users').update(updates).eq('user_id', userId);
+      return true;
+    } catch (e) {
+      print('Error updating user profile: $e');
+      return false;
     }
   }
 }

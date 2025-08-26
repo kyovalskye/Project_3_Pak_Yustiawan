@@ -1,7 +1,7 @@
+// addModal.dart
 import 'package:flutter/material.dart';
-import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import '../services/supabase_services.dart';
-import '../services/master_data_services.dart';
+import '../services/user_session.dart';
 
 class AddModal extends StatefulWidget {
   final Function? onScheduleAdded;
@@ -13,18 +13,10 @@ class AddModal extends StatefulWidget {
 }
 
 class _AddModalState extends State<AddModal> {
-  String? selectedHari;
+  final TextEditingController _namaKegiatanController = TextEditingController();
   final TextEditingController _namaGuruController = TextEditingController();
-  final TextEditingController _namaPelajaranController =
-      TextEditingController();
-  String? _selectedJamMulai;
-  String? _selectedJamBerakhir;
-  Color _selectedColor = const Color(0xFF6366F1);
-  String? _errorMessage;
-  bool _isLoading = false;
-  bool _isLoadingData = true;
-  List<Map<String, String>> _masterJadwalList = [];
-  Map<String, List<String>> _timeSlots = {};
+  final TextEditingController _waktuMulaiController = TextEditingController();
+  final TextEditingController _waktuSelesaiController = TextEditingController();
 
   final List<String> _hariList = [
     'Senin',
@@ -33,418 +25,268 @@ class _AddModalState extends State<AddModal> {
     'Kamis',
     'Jumat',
     'Sabtu',
+    'Minggu',
   ];
 
+  final List<Color> _colorList = [
+    Colors.red,
+    Colors.blue,
+    Colors.green,
+    Colors.orange,
+    Colors.purple,
+    Colors.pink,
+    Colors.teal,
+    Colors.indigo,
+    Colors.amber,
+  ];
+
+  String _selectedHari = 'Senin';
+  Color _selectedColor = Colors.blue;
+  bool _isLoading = false;
+
   @override
-  void initState() {
-    super.initState();
-    _timeSlots = {
-      'Senin': _generateTimeSlots('07:30', '13:40'),
-      'Selasa': _generateTimeSlots('06:30', '14:20'),
-      'Rabu': _generateTimeSlots('06:30', '14:20'),
-      'Kamis': _generateTimeSlots('06:30', '14:20'),
-      'Jumat': _generateTimeSlots('06:30', '11:00'),
-      'Sabtu': _generateTimeSlots('06:30', '11:00'),
-    };
-    _loadMasterData();
+  void dispose() {
+    _namaKegiatanController.dispose();
+    _namaGuruController.dispose();
+    _waktuMulaiController.dispose();
+    _waktuSelesaiController.dispose();
+    super.dispose();
   }
 
-  List<String> _generateTimeSlots(String startTime, String endTime) {
-    List<String> slots = [];
-    TimeOfDay start = _parseTime(startTime);
-    TimeOfDay end = _parseTime(endTime);
-    DateTime startDateTime = DateTime(2025, 8, 20, start.hour, start.minute);
-    DateTime endDateTime = DateTime(2025, 8, 20, end.hour, end.minute);
-
-    while (startDateTime.isBefore(endDateTime) ||
-        startDateTime.isAtSameMomentAs(endDateTime)) {
-      slots.add(
-        '${startDateTime.hour.toString().padLeft(2, '0')}:${startDateTime.minute.toString().padLeft(2, '0')}',
-      );
-      startDateTime = startDateTime.add(const Duration(minutes: 40));
+  Future<void> _addSchedule() async {
+    // Check if user is logged in
+    if (!UserSession.isLoggedIn()) {
+      _showSnackBar('Anda harus login terlebih dahulu', Colors.red);
+      return;
     }
-    return slots;
-  }
 
-  Future<void> _loadMasterData() async {
-    setState(() => _isLoadingData = true);
-    try {
-      final jadwal = await MasterDataService.getMasterJadwalForDropdown();
-      setState(() {
-        _masterJadwalList = jadwal ?? [];
-        _isLoadingData = false;
-      });
-    } catch (e) {
-      setState(() => _isLoadingData = false);
-      print('Error loading master data: $e');
+    if (_namaKegiatanController.text.trim().isEmpty ||
+        _waktuMulaiController.text.trim().isEmpty ||
+        _waktuSelesaiController.text.trim().isEmpty) {
+      _showSnackBar('Harap isi semua field yang wajib', Colors.red);
+      return;
     }
-  }
 
-  bool _validateTimeFormat(String time) {
-    final RegExp timeRegex = RegExp(r'^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$');
-    return timeRegex.hasMatch(time);
-  }
+    // Validate time format
+    if (!_isValidTimeFormat(_waktuMulaiController.text.trim()) ||
+        !_isValidTimeFormat(_waktuSelesaiController.text.trim())) {
+      _showSnackBar('Format waktu harus HH:MM (contoh: 08:00)', Colors.red);
+      return;
+    }
 
-  TimeOfDay _parseTime(String time) {
-    final parts = time.split(':');
-    return TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
-  }
-
-  Future<void> _handleSave() async {
     setState(() {
-      _errorMessage = null;
       _isLoading = true;
     });
 
-    if (selectedHari == null) {
-      setState(() {
-        _errorMessage = 'Pilih hari terlebih dahulu';
-        _isLoading = false;
-      });
-      return;
-    }
-    if (_namaPelajaranController.text.trim().isEmpty) {
-      setState(() {
-        _errorMessage = 'Nama pelajaran harus diisi';
-        _isLoading = false;
-      });
-      return;
-    }
-    if (_selectedJamMulai == null) {
-      setState(() {
-        _errorMessage = 'Pilih jam mulai';
-        _isLoading = false;
-      });
-      return;
-    }
-    if (_selectedJamBerakhir == null) {
-      setState(() {
-        _errorMessage = 'Pilih jam berakhir';
-        _isLoading = false;
-      });
-      return;
-    }
-    final startTime = _parseTime(_selectedJamMulai!);
-    final endTime = _parseTime(_selectedJamBerakhir!);
-    if (endTime.isBefore(startTime)) {
-      setState(() {
-        _errorMessage = 'Jam berakhir harus setelah jam mulai';
-        _isLoading = false;
-      });
-      return;
-    }
-
-    final hasConflict = await SupabaseService.checkScheduleConflict(
-      namaHari: selectedHari!,
-      waktuMulai: _selectedJamMulai!,
-      waktuSelesai: _selectedJamBerakhir!,
-    );
-    if (hasConflict) {
-      setState(() {
-        _errorMessage = 'Sudah ada jadwal di hari dan waktu yang sama';
-        _isLoading = false;
-      });
-      return;
-    }
-
-    final success = await SupabaseService.addJadwal(
-      namaHari: selectedHari!,
-      namaKegiatan: _namaPelajaranController.text.trim(),
-      waktuMulai: _selectedJamMulai!,
-      waktuSelesai: _selectedJamBerakhir!,
-      hexColor: '0x${_selectedColor.value.toRadixString(16).toUpperCase()}',
-      namaGuru: _namaGuruController.text.trim().isEmpty
-          ? null
-          : _namaGuruController.text.trim(),
-    );
-
-    setState(() => _isLoading = false);
-
-    if (success) {
-      widget.onScheduleAdded?.call();
-      Navigator.pop(context, true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Jadwal berhasil ditambahkan!'),
-          backgroundColor: Colors.green,
-        ),
+    try {
+      final success = await SupabaseService.addJadwal(
+        namaHari: _selectedHari,
+        namaKegiatan: _namaKegiatanController.text.trim(),
+        waktuMulai: _waktuMulaiController.text.trim(),
+        waktuSelesai: _waktuSelesaiController.text.trim(),
+        hexColor: '#${_selectedColor.value.toRadixString(16).substring(2)}',
+        namaGuru: _namaGuruController.text.trim().isEmpty
+            ? null
+            : _namaGuruController.text.trim(),
       );
-    } else {
-      setState(
-        () => _errorMessage = 'Gagal menyimpan jadwal. Silakan coba lagi.',
-      );
+
+      if (success) {
+        widget.onScheduleAdded?.call();
+        Navigator.pop(context);
+        _showSnackBar('Jadwal berhasil ditambahkan!', Colors.green);
+      } else {
+        _showSnackBar('Gagal menambahkan jadwal', Colors.red);
+      }
+    } catch (e) {
+      _showSnackBar('Terjadi kesalahan: ${e.toString()}', Colors.red);
     }
+
+    setState(() {
+      _isLoading = false;
+    });
   }
 
-  void _selectJadwal(Map<String, String> jadwal) {
-    setState(() {
-      selectedHari =
-          jadwal['nama_hari'] ??
-          _hariList[0]; // Default ke hari pertama jika null
-      _namaGuruController.text = jadwal['nama_guru'] ?? '';
-      _namaPelajaranController.text = jadwal['nama_pelajaran'] ?? '';
-      _selectedJamMulai = jadwal['waktu_mulai'];
-      _selectedJamBerakhir = jadwal['waktu_selesai'];
-      _selectedColor = Color(
-        int.tryParse(
-              jadwal['hex_color']?.replaceAll('0x', '0xFF') ?? '0xFF6366F1',
-            ) ??
-            0xFF6366F1,
-      );
+  bool _isValidTimeFormat(String time) {
+    final regex = RegExp(r'^([01]?[0-9]|2[0-3]):[0-5][0-9]$');
+    return regex.hasMatch(time);
+  }
 
-      // Pastikan waktu yang dipilih valid dalam _timeSlots
-      if (selectedHari != null &&
-          !_timeSlots[selectedHari!]!.contains(_selectedJamMulai)) {
-        _selectedJamMulai = _timeSlots[selectedHari!]!.isNotEmpty
-            ? _timeSlots[selectedHari!]!.first
-            : null;
-      }
-      if (selectedHari != null &&
-          !_timeSlots[selectedHari!]!.contains(_selectedJamBerakhir)) {
-        _selectedJamBerakhir = _timeSlots[selectedHari!]!.isNotEmpty
-            ? _timeSlots[selectedHari!]!.last
-            : null;
-      }
-    });
+  void _showSnackBar(String message, Color color) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: color,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      insetPadding: const EdgeInsets.all(20),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF4A4877).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
             ),
-          ],
-        ),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(28),
-          child: _isLoadingData
-              ? const Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CircularProgressIndicator(color: Color(0xFF4A4877)),
-                    SizedBox(height: 16),
-                    Text('Memuat data...'),
-                  ],
-                )
-              : Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (_errorMessage != null) ...[
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.red[50],
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.red[200]!),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.error_outline, color: Colors.red[800]),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                _errorMessage!,
-                                style: TextStyle(color: Colors.red[800]),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-                    _buildHeader(),
-                    const SizedBox(height: 20),
-                    _buildHariDropdown(),
-                    const SizedBox(height: 16),
-                    _buildTextFieldWithLabel(
-                      label: 'Nama Guru (Opsional)',
-                      controller: _namaGuruController,
-                      hint: 'Masukkan nama guru',
-                    ),
-                    const SizedBox(height: 16),
-                    _buildTextFieldWithLabel(
-                      label: 'Mata Pelajaran',
-                      controller: _namaPelajaranController,
-                      hint: 'Masukkan mata pelajaran',
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildTimeDropdown(
-                            label: 'Jam Mulai',
-                            value: _selectedJamMulai,
-                            items: selectedHari != null
-                                ? _timeSlots[selectedHari!]!
-                                : [],
-                            onChanged: (value) =>
-                                setState(() => _selectedJamMulai = value),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: _buildTimeDropdown(
-                            label: 'Jam Berakhir',
-                            value: _selectedJamBerakhir,
-                            items: selectedHari != null
-                                ? _timeSlots[selectedHari!]!
-                                : [],
-                            onChanged: (value) =>
-                                setState(() => _selectedJamBerakhir = value),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    _buildColorPicker(),
-                    const SizedBox(height: 20),
-                    if (_masterJadwalList.isNotEmpty) ...[
-                      const Text(
-                        'Pilih dari Master Data',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF374151),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: _masterJadwalList.map((jadwal) {
-                          final color = Color(
-                            int.parse(
-                              jadwal['hex_color']!.replaceAll('0x', '0xFF'),
-                            ),
-                          );
-                          return GestureDetector(
-                            onTap: () => _selectJadwal(jadwal),
-                            child: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: color.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: color),
-                              ),
-                              child: Text(
-                                jadwal['nama_pelajaran']!,
-                                style: TextStyle(
-                                  color: color,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                      const SizedBox(height: 20),
-                    ],
-                    _buildColorPreview(),
-                    const SizedBox(height: 28),
-                    _buildActionButtons(),
-                  ],
-                ),
-        ),
+            child: const Icon(
+              Icons.add_task,
+              color: Color(0xFF4A4877),
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          const Text(
+            'Tambah Jadwal',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 18,
+              color: Color(0xFF1F2937),
+            ),
+          ),
+        ],
       ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: _selectedColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: const Icon(
-            Icons.add_circle_outline,
-            color: Color(0xFF4A4877),
-            size: 24,
-          ),
-        ),
-        const SizedBox(width: 12),
-        const Text(
-          'Tambah Jadwal Kegiatan',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF1F2937),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildHariDropdown() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Hari',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF374151),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            border: Border.all(color: const Color(0xFFE5E7EB)),
-            borderRadius: BorderRadius.circular(12),
-            color: const Color(0xFFF9FAFB),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: selectedHari,
-              hint: const Text(
-                'Pilih hari',
-                style: TextStyle(color: Color(0xFF9CA3AF)),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // User info display
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF4A4877).withOpacity(0.05),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: const Color(0xFF4A4877).withOpacity(0.2),
+                ),
               ),
-              isExpanded: true,
-              items: _hariList.map((hari) {
-                return DropdownMenuItem(
-                  value: hari,
-                  child: Text(
-                    hari,
-                    style: const TextStyle(
-                      color: Color(0xFF374151),
+              child: Row(
+                children: [
+                  Icon(Icons.person, size: 16, color: const Color(0xFF4A4877)),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Ditambahkan oleh: ${UserSession.getCurrentUserName() ?? 'Unknown'}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: const Color(0xFF4A4877),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                );
-              }).toList(),
-              onChanged: (value) => setState(() {
-                selectedHari = value;
-                _selectedJamMulai = null;
-                _selectedJamBerakhir = null;
-              }),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Pilih Hari
+            _buildDropdownField(
+              label: 'Pilih Hari',
+              value: _selectedHari,
+              items: _hariList,
+              onChanged: (value) {
+                setState(() {
+                  _selectedHari = value!;
+                });
+              },
+            ),
+            const SizedBox(height: 16),
+
+            // Nama Kegiatan
+            _buildTextField(
+              label: 'Nama Kegiatan *',
+              controller: _namaKegiatanController,
+              hintText: 'Masukkan nama kegiatan',
+              icon: Icons.book,
+            ),
+            const SizedBox(height: 16),
+
+            // Nama Guru (Optional)
+            _buildTextField(
+              label: 'Nama Guru (Opsional)',
+              controller: _namaGuruController,
+              hintText: 'Masukkan nama guru',
+              icon: Icons.person_outline,
+            ),
+            const SizedBox(height: 16),
+
+            // Waktu
+            Row(
+              children: [
+                Expanded(
+                  child: _buildTextField(
+                    label: 'Waktu Mulai *',
+                    controller: _waktuMulaiController,
+                    hintText: '08:00',
+                    icon: Icons.access_time,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildTextField(
+                    label: 'Waktu Selesai *',
+                    controller: _waktuSelesaiController,
+                    hintText: '10:00',
+                    icon: Icons.access_time_filled,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // Pilih Warna
+            _buildColorPicker(),
+            const SizedBox(height: 8),
+            Text(
+              '* Field wajib diisi',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isLoading ? null : () => Navigator.pop(context),
+          child: Text('Batal', style: TextStyle(color: Colors.grey[600])),
+        ),
+        ElevatedButton(
+          onPressed: _isLoading ? null : _addSchedule,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF4A4877),
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
             ),
           ),
+          child: _isLoading
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : const Text('Tambah'),
         ),
       ],
     );
   }
 
-  Widget _buildTimeDropdown({
+  Widget _buildDropdownField({
     required String label,
-    required String? value,
+    required String value,
     required List<String> items,
-    required ValueChanged<String?> onChanged,
+    required void Function(String?) onChanged,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -457,37 +299,67 @@ class _AddModalState extends State<AddModal> {
             color: Color(0xFF374151),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
             border: Border.all(color: const Color(0xFFE5E7EB)),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(8),
             color: const Color(0xFFF9FAFB),
           ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: value,
-              hint: const Text(
-                'Pilih jam',
-                style: TextStyle(color: Color(0xFF9CA3AF)),
+          child: DropdownButtonFormField<String>(
+            value: value,
+            items: items.map((item) {
+              return DropdownMenuItem(value: item, child: Text(item));
+            }).toList(),
+            onChanged: onChanged,
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTextField({
+    required String label,
+    required TextEditingController controller,
+    required String hintText,
+    IconData? icon,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF374151),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: const Color(0xFFE5E7EB)),
+            borderRadius: BorderRadius.circular(8),
+            color: const Color(0xFFF9FAFB),
+          ),
+          child: TextField(
+            controller: controller,
+            enabled: !_isLoading,
+            decoration: InputDecoration(
+              hintText: hintText,
+              hintStyle: const TextStyle(color: Color(0xFF9CA3AF)),
+              border: InputBorder.none,
+              prefixIcon: icon != null
+                  ? Icon(icon, color: const Color(0xFF9CA3AF), size: 20)
+                  : null,
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: icon != null ? 12 : 16,
+                vertical: 12,
               ),
-              isExpanded: true,
-              items: items.isNotEmpty
-                  ? items.map((jam) {
-                      return DropdownMenuItem(
-                        value: jam,
-                        child: Text(
-                          jam,
-                          style: const TextStyle(
-                            color: Color(0xFF374151),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      );
-                    }).toList()
-                  : [const DropdownMenuItem(child: Text('Tidak ada opsi'))],
-              onChanged: onChanged,
             ),
           ),
         ),
@@ -508,235 +380,43 @@ class _AddModalState extends State<AddModal> {
           ),
         ),
         const SizedBox(height: 8),
-        GestureDetector(
-          onTap: () async {
-            final picked = await showDialog<Color>(
-              context: context,
-              builder: (context) => AlertDialog(
-                title: const Text('Pilih Warna'),
-                content: SingleChildScrollView(
-                  child: BlockPicker(
-                    pickerColor: _selectedColor,
-                    onColorChanged: (color) =>
-                        setState(() => _selectedColor = color),
-                    availableColors: const [
-                      Color(0xFF6366F1),
-                      Color(0xFF8B5CF6),
-                      Color(0xFFEC4899),
-                      Color(0xFFEF4444),
-                      Color(0xFFF97316),
-                      Color(0xFFEAB308),
-                      Color(0xFF22C55E),
-                      Color(0xFF10B981),
-                      Color(0xFF06B6D4),
-                      Color(0xFF3B82F6),
-                    ],
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: _colorList.map((color) {
+            final isSelected = _selectedColor == color;
+            return GestureDetector(
+              onTap: () {
+                setState(() {
+                  _selectedColor = color;
+                });
+              },
+              child: Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isSelected ? Colors.black : Colors.black26,
+                    width: isSelected ? 2 : 1,
                   ),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: color.withOpacity(0.3),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
                 ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Batal'),
-                  ),
-                ],
+                child: isSelected
+                    ? const Icon(Icons.check, color: Colors.white, size: 18)
+                    : null,
               ),
             );
-            if (picked != null) {
-              setState(() => _selectedColor = picked);
-            }
-          },
-          child: Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: _selectedColor,
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.black26),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildColorPreview() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Preview Jadwal',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF374151),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: _selectedColor,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: _selectedColor.withOpacity(0.3),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                _namaPelajaranController.text.isEmpty
-                    ? 'Mata Pelajaran'
-                    : _namaPelajaranController.text,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  shadows: [
-                    Shadow(
-                      color: Colors.black.withOpacity(0.3),
-                      offset: const Offset(0, 1),
-                      blurRadius: 2,
-                    ),
-                  ],
-                ),
-              ),
-              if (_namaGuruController.text.isNotEmpty) ...[
-                const SizedBox(height: 4),
-                Text(
-                  'Guru: ${_namaGuruController.text}',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.9),
-                    fontSize: 12,
-                    shadows: [
-                      Shadow(
-                        color: Colors.black.withOpacity(0.3),
-                        offset: const Offset(0, 1),
-                        blurRadius: 2,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-              if (_selectedJamMulai != null &&
-                  _selectedJamBerakhir != null) ...[
-                const SizedBox(height: 4),
-                Text(
-                  '$_selectedJamMulai - $_selectedJamBerakhir',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.9),
-                    fontSize: 12,
-                    shadows: [
-                      Shadow(
-                        color: Colors.black.withOpacity(0.3),
-                        offset: const Offset(0, 1),
-                        blurRadius: 2,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildActionButtons() {
-    return Row(
-      children: [
-        Expanded(
-          child: OutlinedButton(
-            onPressed: _isLoading ? null : () => Navigator.pop(context),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              side: const BorderSide(color: Color(0xFFE5E7EB)),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: const Text(
-              'Batal',
-              style: TextStyle(
-                color: Color(0xFF6B7280),
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: ElevatedButton(
-            onPressed: _isLoading ? null : _handleSave,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF4A4877),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: _isLoading
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
-                    ),
-                  )
-                : const Text(
-                    'Simpan',
-                    style: TextStyle(fontWeight: FontWeight.w600),
-                  ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTextFieldWithLabel({
-    required String label,
-    required TextEditingController controller,
-    required String hint,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF374151),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            border: Border.all(color: const Color(0xFFE5E7EB)),
-            borderRadius: BorderRadius.circular(12),
-            color: const Color(0xFFF9FAFB),
-          ),
-          child: TextField(
-            controller: controller,
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: const TextStyle(color: Color(0xFF9CA3AF)),
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.all(16),
-            ),
-            style: const TextStyle(
-              color: Color(0xFF374151),
-              fontWeight: FontWeight.w500,
-            ),
-          ),
+          }).toList(),
         ),
       ],
     );

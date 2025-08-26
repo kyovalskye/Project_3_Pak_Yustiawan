@@ -1,11 +1,41 @@
-// header.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_project3/services/user_session.dart';
 import 'package:flutter_project3/pages/login_page.dart';
 import 'package:flutter_project3/pages/settings_pages.dart';
+import 'package:flutter_project3/pages/profile_pages.dart';
 
-class Header extends StatelessWidget implements PreferredSizeWidget {
+class Header extends StatefulWidget implements PreferredSizeWidget {
   const Header({super.key});
+
+  @override
+  State<Header> createState() => _HeaderState();
+
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+}
+
+class _HeaderState extends State<Header> {
+  @override
+  void initState() {
+    super.initState();
+    // Set callback untuk auto-update saat UserSession berubah
+    UserSession.setUpdateCallback(_onUserSessionUpdated);
+  }
+
+  @override
+  void dispose() {
+    // Clear callback saat widget di-dispose
+    UserSession.clearUpdateCallback();
+    super.dispose();
+  }
+
+  void _onUserSessionUpdated() {
+    if (mounted) {
+      setState(() {
+        // Rebuild header dengan data terbaru
+      });
+    }
+  }
 
   void _showLogoutDialog(BuildContext context) {
     showDialog(
@@ -39,9 +69,59 @@ class Header extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 
+  Widget _buildProfileAvatar(String? profilePictureUrl) {
+    return Container(
+      width: 28,
+      height: 28,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.white.withOpacity(0.2),
+        border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
+      ),
+      child: ClipOval(
+        child: profilePictureUrl != null && profilePictureUrl.isNotEmpty
+            ? Image.network(
+                profilePictureUrl,
+                width: 28,
+                height: 28,
+                fit: BoxFit.cover,
+                headers: {'User-Agent': 'Flutter App', 'Accept': 'image/*'},
+                errorBuilder: (context, error, stackTrace) =>
+                    const Icon(Icons.person, color: Colors.white, size: 20),
+              )
+            : const Icon(Icons.person, color: Colors.white, size: 20),
+      ),
+    );
+  }
+
+  Widget _buildPopupMenuProfileAvatar(String? profilePictureUrl) {
+    return Container(
+      width: 20,
+      height: 20,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.grey.withOpacity(0.2),
+      ),
+      child: ClipOval(
+        child: profilePictureUrl != null && profilePictureUrl.isNotEmpty
+            ? Image.network(
+                profilePictureUrl,
+                width: 20,
+                height: 20,
+                fit: BoxFit.cover,
+                headers: {'User-Agent': 'Flutter App', 'Accept': 'image/*'},
+                errorBuilder: (context, error, stackTrace) =>
+                    const Icon(Icons.person, color: Colors.grey, size: 14),
+              )
+            : const Icon(Icons.person, color: Colors.grey, size: 14),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final userName = UserSession.getCurrentUserName() ?? 'User';
+    final profilePictureUrl = UserSession.getCurrentUserProfilePicture();
 
     return AppBar(
       title: Column(
@@ -72,12 +152,8 @@ class Header extends StatelessWidget implements PreferredSizeWidget {
         Padding(
           padding: const EdgeInsets.only(right: 10),
           child: PopupMenuButton<String>(
-            icon: const Icon(
-              Icons.account_circle,
-              color: Colors.white,
-              size: 28,
-            ),
-            onSelected: (String value) {
+            icon: _buildProfileAvatar(profilePictureUrl),
+            onSelected: (String value) async {
               if (value == 'logout') {
                 _showLogoutDialog(context);
               } else if (value == 'settings') {
@@ -85,6 +161,20 @@ class Header extends StatelessWidget implements PreferredSizeWidget {
                   context,
                   MaterialPageRoute(builder: (context) => const SettingsPage()),
                 );
+              } else if (value == 'profile') {
+                // Handle result dari ProfilePage untuk update header
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ProfilePage()),
+                );
+
+                // Jika profile diupdate, setState sudah dipanggil otomatis
+                // via UserSession callback, tapi kita bisa tambahkan manual refresh
+                if (result == true && mounted) {
+                  setState(() {
+                    // Force rebuild dengan data terbaru
+                  });
+                }
               }
             },
             itemBuilder: (BuildContext context) => [
@@ -92,9 +182,21 @@ class Header extends StatelessWidget implements PreferredSizeWidget {
                 value: 'profile',
                 child: Row(
                   children: [
-                    const Icon(Icons.person, color: Colors.grey),
+                    _buildPopupMenuProfileAvatar(profilePictureUrl),
                     const SizedBox(width: 8),
-                    Text('Profil ($userName)'),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Profil ($userName)',
+                            style: const TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                          // Hapus tampilan URL - hanya tampilkan status
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -104,7 +206,7 @@ class Header extends StatelessWidget implements PreferredSizeWidget {
                   children: [
                     Icon(Icons.settings, color: Colors.grey),
                     SizedBox(width: 8),
-                    Text('Pengaturan'),
+                    Text('Master Data'),
                   ],
                 ),
               ),
@@ -128,7 +230,4 @@ class Header extends StatelessWidget implements PreferredSizeWidget {
       ),
     );
   }
-
-  @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 }
