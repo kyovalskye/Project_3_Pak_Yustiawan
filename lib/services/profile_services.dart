@@ -16,8 +16,7 @@ class ProfileService {
         return null;
       }
 
-      print('Fetching profile for user: $userId'); // Debug log
-
+      print('Fetching profile for user: $userId');
       final user = await _client
           .from('users')
           .select('user_id, nama, email, created_at, profile_picture')
@@ -27,7 +26,7 @@ class ProfileService {
       if (user != null) {
         print(
           'Profile fetched successfully - Picture URL: ${user['profile_picture']}',
-        ); // Debug log
+        );
       } else {
         print('No user found for ID: $userId');
       }
@@ -39,7 +38,6 @@ class ProfileService {
     }
   }
 
-  // Original method for mobile platforms
   static Future<String?> uploadProfilePicture(String filePath) async {
     try {
       final userId = UserSession.getCurrentUserId();
@@ -48,14 +46,10 @@ class ProfileService {
         return null;
       }
 
-      // Delete old profile picture first
       await _deleteOldProfilePicture(userId);
-
-      // Use simpler filename without folder structure
       final fileName =
           'profile_${userId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-
-      print('Uploading mobile file: $fileName'); // Debug log
+      print('Uploading mobile file: $fileName');
 
       final response = await _client.storage
           .from('profile_pictures')
@@ -65,16 +59,12 @@ class ProfileService {
             fileOptions: const FileOptions(upsert: true),
           );
 
-      print('Upload response: $response'); // Debug log
-
-      // Create signed URL with long expiration
+      print('Upload response: $response');
       final signedUrl = await _client.storage
           .from('profile_pictures')
-          .createSignedUrl(fileName, 60 * 60 * 24 * 365 * 10); // 10 years
+          .createSignedUrl(fileName, 60 * 60 * 24 * 365 * 10);
 
-      print('Mobile upload complete - Signed URL: $signedUrl'); // Debug log
-
-      // Update database with new URL
+      print('Mobile upload complete - Signed URL: $signedUrl');
       await _client
           .from('users')
           .update({
@@ -83,8 +73,7 @@ class ProfileService {
           })
           .eq('user_id', userId);
 
-      print('Database updated with new profile picture URL'); // Debug log
-
+      print('Database updated with new profile picture URL');
       return signedUrl;
     } catch (e) {
       print('Error uploading profile picture: $e');
@@ -93,7 +82,6 @@ class ProfileService {
     }
   }
 
-  // New method for web platform
   static Future<String?> uploadProfilePictureWeb(Uint8List imageBytes) async {
     try {
       final userId = UserSession.getCurrentUserId();
@@ -102,14 +90,10 @@ class ProfileService {
         return null;
       }
 
-      // Delete old profile picture first
       await _deleteOldProfilePicture(userId);
-
-      // Use simpler filename without folder structure
       final fileName =
           'profile_${userId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-
-      print('Uploading web file: $fileName'); // Debug log
+      print('Uploading web file: $fileName');
 
       final response = await _client.storage
           .from('profile_pictures')
@@ -122,16 +106,12 @@ class ProfileService {
             ),
           );
 
-      print('Upload response: $response'); // Debug log
-
-      // Create signed URL with long expiration
+      print('Upload response: $response');
       final signedUrl = await _client.storage
           .from('profile_pictures')
-          .createSignedUrl(fileName, 60 * 60 * 24 * 365 * 10); // 10 years
+          .createSignedUrl(fileName, 60 * 60 * 24 * 365 * 10);
 
-      print('Web upload complete - Signed URL: $signedUrl'); // Debug log
-
-      // Update database with new URL
+      print('Web upload complete - Signed URL: $signedUrl');
       await _client
           .from('users')
           .update({
@@ -140,8 +120,7 @@ class ProfileService {
           })
           .eq('user_id', userId);
 
-      print('Database updated with new profile picture URL'); // Debug log
-
+      print('Database updated with new profile picture URL');
       return signedUrl;
     } catch (e) {
       print('Error uploading profile picture for web: $e');
@@ -150,10 +129,27 @@ class ProfileService {
     }
   }
 
-  // Helper method to delete old profile picture
+  static Future<bool> changePassword({required String newPassword}) async {
+    try {
+      final userId = UserSession.getCurrentUserId();
+      if (userId == null) {
+        print('No authenticated user');
+        return false;
+      }
+
+      // Update password directly
+      await _client.auth.updateUser(UserAttributes(password: newPassword));
+
+      print('Password updated successfully');
+      return true;
+    } catch (e) {
+      print('Error changing password: $e');
+      return false;
+    }
+  }
+
   static Future<void> _deleteOldProfilePicture(String userId) async {
     try {
-      // Get current user to check if there's an existing profile picture
       final currentUser = await _client
           .from('users')
           .select('profile_picture')
@@ -163,46 +159,36 @@ class ProfileService {
       if (currentUser?['profile_picture'] != null) {
         final oldUrl = currentUser!['profile_picture'] as String;
         if (oldUrl.isNotEmpty && oldUrl.contains('profile_pictures')) {
-          // Extract filename from URL - handle both signed URLs and public URLs
           String? fileName;
-
           if (oldUrl.contains('/object/public/profile_pictures/')) {
-            // Public URL format
             final parts = oldUrl.split('/object/public/profile_pictures/');
             if (parts.length > 1) {
-              fileName = parts[1]
-                  .split('?')
-                  .first; // Remove query parameters if any
+              fileName = parts[1].split('?').first;
             }
           } else if (oldUrl.contains('/object/sign/profile_pictures/')) {
-            // Signed URL format
             final parts = oldUrl.split('/object/sign/profile_pictures/');
             if (parts.length > 1) {
-              fileName = parts[1].split('?').first; // Remove query parameters
+              fileName = parts[1].split('?').first;
             }
           } else if (oldUrl.contains('profile_')) {
-            // Simple filename format
             final uri = Uri.parse(oldUrl);
             final pathSegments = uri.pathSegments;
             fileName = pathSegments.last;
           }
 
           if (fileName != null && fileName.isNotEmpty) {
-            print('Attempting to delete old file: $fileName'); // Debug log
-
+            print('Attempting to delete old file: $fileName');
             try {
               await _client.storage.from('profile_pictures').remove([fileName]);
               print('Old profile picture deleted successfully');
             } catch (deleteError) {
               print('Error deleting old profile picture: $deleteError');
-              // Don't throw error, just continue with upload
             }
           }
         }
       }
     } catch (e) {
       print('Error checking/deleting old profile picture: $e');
-      // Don't throw error, just continue with upload
     }
   }
 
@@ -223,11 +209,9 @@ class ProfileService {
         if (profilePictureUrl != null) 'profile_picture': profilePictureUrl,
       };
 
-      print('Updating user profile with: $updates'); // Debug log
-
+      print('Updating user profile with: $updates');
       await _client.from('users').update(updates).eq('user_id', userId);
-
-      print('User profile updated successfully'); // Debug log
+      print('User profile updated successfully');
       return true;
     } catch (e) {
       print('Error updating user profile: $e');
@@ -235,7 +219,6 @@ class ProfileService {
     }
   }
 
-  // Additional method to refresh user session data
   static Future<void> refreshUserSession() async {
     try {
       final updatedUser = await getUserProfile();
