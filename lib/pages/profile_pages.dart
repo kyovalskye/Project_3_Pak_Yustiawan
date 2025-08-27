@@ -48,13 +48,16 @@ class _ProfilePageState extends State<ProfilePage> {
     });
 
     try {
+      // Load from SharedPreferences first
+      await UserSession.loadUserFromPrefs();
+
       final user = await ProfileService.getUserProfile();
       if (user != null) {
         setState(() {
           _namaProfileController.text = user['nama'] ?? 'Nama Pengguna';
           _profilePictureUrl = user['profile_picture'];
         });
-        UserSession.setCurrentUser(user);
+        await UserSession.setCurrentUser(user);
         print('Profile loaded - Picture URL: ${user['profile_picture']}');
       } else {
         final currentUser = UserSession.getCurrentUser();
@@ -85,6 +88,16 @@ class _ProfilePageState extends State<ProfilePage> {
           _profilePictureUrl = null;
         });
       }
+
+      // Show error message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading profile: ${e.toString()}'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
     } finally {
       setState(() {
         _isLoading = false;
@@ -93,21 +106,100 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    try {
+      final picker = ImagePicker();
 
-    if (pickedFile != null) {
-      if (kIsWeb) {
-        final webImage = await pickedFile.readAsBytes();
-        setState(() {
-          _webImage = webImage;
-          _selectedImage = null;
-        });
-      } else {
-        setState(() {
-          _selectedImage = File(pickedFile.path);
-          _webImage = null;
-        });
+      // Show options for image source
+      final source = await showModalBottomSheet<ImageSource>(
+        context: context,
+        builder: (context) => SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Gallery'),
+                onTap: () => Navigator.of(context).pop(ImageSource.gallery),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_camera),
+                title: const Text('Camera'),
+                onTap: () => Navigator.of(context).pop(ImageSource.camera),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      if (source == null) return;
+
+      final pickedFile = await picker.pickImage(
+        source: source,
+        maxWidth: 1000,
+        maxHeight: 1000,
+        imageQuality: 85,
+      );
+
+      if (pickedFile != null) {
+        print('Image picked: ${pickedFile.path}');
+
+        if (kIsWeb) {
+          final webImage = await pickedFile.readAsBytes();
+          setState(() {
+            _webImage = webImage;
+            _selectedImage = null;
+          });
+          print('Web image loaded: ${webImage.length} bytes');
+        } else {
+          // Verify file exists for mobile
+          final file = File(pickedFile.path);
+          final exists = await file.exists();
+          print('Mobile file exists: $exists, path: ${pickedFile.path}');
+
+          if (exists) {
+            // Test reading the file
+            try {
+              final bytes = await file.readAsBytes();
+              print('Mobile file readable: ${bytes.length} bytes');
+
+              setState(() {
+                _selectedImage = file;
+                _webImage = null;
+              });
+            } catch (readError) {
+              print('Error reading selected file: $readError');
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Error reading selected image file'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+              return;
+            }
+          } else {
+            print('Selected file does not exist');
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Selected image file not found'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+            return;
+          }
+        }
+      }
+    } catch (e) {
+      print('Error picking image: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error selecting image: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     }
   }
@@ -130,7 +222,9 @@ class _ProfilePageState extends State<ProfilePage> {
     try {
       String? profilePictureUrl = _profilePictureUrl;
 
+      // Upload new image if selected
       if (kIsWeb && _webImage != null) {
+        print('Starting web image upload...');
         profilePictureUrl = await ProfileService.uploadProfilePictureWeb(
           _webImage!,
         );
@@ -148,13 +242,33 @@ class _ProfilePageState extends State<ProfilePage> {
         }
         print('Web upload success - URL: $profilePictureUrl');
       } else if (!kIsWeb && _selectedImage != null) {
+        print('Starting mobile image upload...');
+        print('Selected file path: ${_selectedImage!.path}');
+
+        // Double check file exists before upload
+        if (!await _selectedImage!.exists()) {
+          print('Selected image file no longer exists');
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('File gambar tidak ditemukan'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          setState(() {
+            _isLoading = false;
+          });
+          return;
+        }
+
         profilePictureUrl = await ProfileService.uploadProfilePicture(
           _selectedImage!.path,
         );
         if (profilePictureUrl == null) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Gagal mengunggah foto profil'),
+              content: Text(
+                'Gagal mengunggah foto profil. Periksa koneksi internet dan coba lagi.',
+              ),
               backgroundColor: Colors.red,
             ),
           );
@@ -166,15 +280,17 @@ class _ProfilePageState extends State<ProfilePage> {
         print('Mobile upload success - URL: $profilePictureUrl');
       }
 
+      // Update profile
       final success = await ProfileService.updateUserProfile(
         nama: _namaProfileController.text.trim(),
         profilePictureUrl: profilePictureUrl,
       );
 
       if (success) {
+        // Refresh user session
         final updatedUser = await ProfileService.getUserProfile();
         if (updatedUser != null) {
-          UserSession.setCurrentUser(updatedUser);
+          await UserSession.setCurrentUser(updatedUser);
           print(
             'Session updated - Picture URL: ${updatedUser['profile_picture']}',
           );
@@ -551,7 +667,7 @@ class _ProfilePageState extends State<ProfilePage> {
           );
         },
         errorBuilder: (context, error, stackTrace) {
-          print('Error loading profile image');
+          print('Error loading profile image: $error');
           return Container(
             width: 100,
             height: 100,

@@ -1,4 +1,3 @@
-//settings_pages.dart
 import 'package:flutter/material.dart';
 import '../services/master_data_services.dart';
 import '../widgets/add_master_data.dart';
@@ -18,23 +17,16 @@ class _SettingsPageState extends State<SettingsPage>
   List<Map<String, dynamic>> masterJadwalList = [];
   bool isLoadingMasterData = true;
 
-  // Profile State
-  final TextEditingController _namaProfileController = TextEditingController(
-    text: 'Nama Pengguna',
-  );
-
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 1, vsync: this);
     _loadMasterData();
-    _loadProfile();
   }
 
   @override
   void dispose() {
     _tabController.dispose();
-    _namaProfileController.dispose();
     super.dispose();
   }
 
@@ -49,40 +41,6 @@ class _SettingsPageState extends State<SettingsPage>
     } catch (e) {
       setState(() => isLoadingMasterData = false);
       print('Error loading master data: $e');
-    }
-  }
-
-  Future<void> _loadProfile() async {
-    try {
-      final nama = await MasterDataService.getUserProfile();
-      setState(() {
-        _namaProfileController.text = nama;
-      });
-    } catch (e) {
-      print('Error loading profile: $e');
-    }
-  }
-
-  Future<void> _saveProfile() async {
-    if (_namaProfileController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Nama tidak boleh kosong'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-    final success = await MasterDataService.updateUserProfile(
-      _namaProfileController.text.trim(),
-    );
-    if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Profil berhasil diperbarui!'),
-          backgroundColor: Colors.green,
-        ),
-      );
     }
   }
 
@@ -137,31 +95,26 @@ class _SettingsPageState extends State<SettingsPage>
           indicatorWeight: 4,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white70,
-          tabs: const [
-            Tab(text: 'Master Data'),
-            Tab(text: 'Edit Profil'),
-          ],
+          tabs: const [Tab(text: 'Master Data')],
         ),
       ),
       body: TabBarView(
         controller: _tabController,
-        children: [_buildMasterDataTab(), _buildEditProfileTab()],
+        children: [_buildMasterDataTab()],
       ),
-      floatingActionButton: _tabController.index == 0
-          ? FloatingActionButton(
-              onPressed: () async {
-                final success = await showDialog<bool>(
-                  context: context,
-                  builder: (context) => const AddMasterDataModal(),
-                );
-                if (success == true) {
-                  _loadMasterData();
-                }
-              },
-              backgroundColor: const Color(0xFF4A4877),
-              child: const Icon(Icons.add, color: Colors.white),
-            )
-          : null,
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          final success = await showDialog<bool>(
+            context: context,
+            builder: (context) => const AddMasterDataModal(),
+          );
+          if (success == true) {
+            _loadMasterData();
+          }
+        },
+        backgroundColor: const Color(0xFF4A4877),
+        child: const Icon(Icons.add, color: Colors.white),
+      ),
     );
   }
 
@@ -205,45 +158,6 @@ class _SettingsPageState extends State<SettingsPage>
     );
   }
 
-  Widget _buildEditProfileTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildSectionHeader(icon: Icons.person, title: 'Profil Pengguna'),
-          const SizedBox(height: 16),
-          _buildTextFieldWithLabel(
-            label: 'Nama',
-            hint: 'Masukkan nama Anda',
-            controller: _namaProfileController,
-          ),
-          const SizedBox(height: 24),
-          Center(
-            child: ElevatedButton(
-              onPressed: _saveProfile,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF4A4877),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 14,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text(
-                'Simpan Perubahan',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildSectionHeader({required IconData icon, required String title}) {
     return Row(
       children: [
@@ -262,47 +176,6 @@ class _SettingsPageState extends State<SettingsPage>
             fontSize: 20,
             fontWeight: FontWeight.w600,
             color: Color(0xFF1F2937),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTextFieldWithLabel({
-    required String label,
-    required String hint,
-    required TextEditingController controller,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF374151),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            border: Border.all(color: const Color(0xFFE5E7EB)),
-            borderRadius: BorderRadius.circular(12),
-            color: const Color(0xFFF9FAFB),
-          ),
-          child: TextField(
-            controller: controller,
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: const TextStyle(color: Color(0xFF9CA3AF)),
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.all(16),
-            ),
-            style: const TextStyle(
-              color: Color(0xFF374151),
-              fontWeight: FontWeight.w500,
-            ),
           ),
         ),
       ],

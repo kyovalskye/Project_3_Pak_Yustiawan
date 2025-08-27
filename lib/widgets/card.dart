@@ -1,7 +1,7 @@
-//card.dart
 import 'package:flutter/material.dart';
 import '../model/pelajaran.dart';
 import '../services/supabase_services.dart';
+import 'package:animate_do/animate_do.dart';
 
 class HariCard extends StatelessWidget {
   final String title;
@@ -34,26 +34,46 @@ class HariCard extends StatelessWidget {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: Colors.white,
+        elevation: 8,
         title: const Text(
           'Hapus Jadwal',
-          style: TextStyle(fontWeight: FontWeight.w600),
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            fontSize: 20,
+            color: Color(0xFF1F2937),
+          ),
         ),
         content: Text(
           'Apakah Anda yakin ingin menghapus jadwal "${pelajaran.nama}"?',
+          style: const TextStyle(fontSize: 16, color: Color(0xFF6B7280)),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Batal'),
+            child: const Text(
+              'Batal',
+              style: TextStyle(
+                color: Color(0xFF6B7280),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
+              backgroundColor: Colors.red.shade600,
               foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 2,
             ),
-            child: const Text('Hapus'),
+            child: const Text(
+              'Hapus',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
           ),
         ],
       ),
@@ -64,16 +84,24 @@ class HariCard extends StatelessWidget {
       if (success) {
         onScheduleChanged?.call();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Jadwal berhasil dihapus!'),
-            backgroundColor: Colors.green,
+          SnackBar(
+            content: const Text('Jadwal berhasil dihapus!'),
+            backgroundColor: Colors.green.shade600,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Gagal menghapus jadwal!'),
-            backgroundColor: Colors.red,
+          SnackBar(
+            content: const Text('Gagal menghapus jadwal!'),
+            backgroundColor: Colors.red.shade600,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         );
       }
@@ -82,9 +110,7 @@ class HariCard extends StatelessWidget {
 
   void _showEditDialog(BuildContext context, Pelajaran item) {
     final namaController = TextEditingController(text: item.nama);
-    final namaGuruController = TextEditingController(
-      text: item.namaGuru ?? '',
-    ); // Added teacher name controller
+    final namaGuruController = TextEditingController(text: item.namaGuru ?? '');
     final mulaiController = TextEditingController(text: item.waktuMulai);
     final selesaiController = TextEditingController(text: item.waktuSelesai);
     String selectedHari = item.namaHari ?? _hariList.first;
@@ -95,96 +121,164 @@ class HariCard extends StatelessWidget {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setState) => AlertDialog(
-            title: const Text('Edit Jadwal'),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            backgroundColor: Colors.white,
+            elevation: 8,
+            title: const Text(
+              'Edit Jadwal',
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 20,
+                color: Color(0xFF1F2937),
+              ),
+            ),
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Pilih Hari
                   DropdownButtonFormField<String>(
                     value: selectedHari,
                     items: _hariList.map((hari) {
-                      return DropdownMenuItem(value: hari, child: Text(hari));
+                      return DropdownMenuItem(
+                        value: hari,
+                        child: Text(
+                          hari,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Color(0xFF1F2937),
+                          ),
+                        ),
+                      );
                     }).toList(),
                     onChanged: (value) {
                       if (value != null) setState(() => selectedHari = value);
                     },
-                    decoration: const InputDecoration(labelText: 'Pilih Hari'),
+                    decoration: InputDecoration(
+                      labelText: 'Pilih Hari',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
+                    ),
                   ),
-                  const SizedBox(height: 8),
-
-                  // Nama kegiatan
+                  const SizedBox(height: 12),
                   TextField(
                     controller: namaController,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Nama Kegiatan',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
                     ),
                   ),
-                  const SizedBox(height: 8),
-
-                  // Nama guru
+                  const SizedBox(height: 12),
                   TextField(
                     controller: namaGuruController,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Nama Guru (Opsional)',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
                     ),
                   ),
-                  const SizedBox(height: 8),
-
-                  // Jam mulai
+                  const SizedBox(height: 12),
                   TextField(
                     controller: mulaiController,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Waktu Mulai (HH:MM)',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
                     ),
                   ),
-                  const SizedBox(height: 8),
-
-                  // Jam selesai
+                  const SizedBox(height: 12),
                   TextField(
                     controller: selesaiController,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Waktu Selesai (HH:MM)',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
                     ),
                   ),
-                  const SizedBox(height: 8),
-
-                  // Pilih warna
+                  const SizedBox(height: 12),
                   Row(
                     children: [
-                      const Text('Pilih Warna:'),
-                      const SizedBox(width: 8),
+                      const Text(
+                        'Pilih Warna:',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Color(0xFF1F2937),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
                       GestureDetector(
                         onTap: () async {
                           final picked = await showDialog<Color>(
                             context: context,
                             builder: (context) {
                               final colors = [
-                                Colors.red,
-                                Colors.blue,
-                                Colors.green,
-                                Colors.orange,
-                                Colors.purple,
-                                Colors.pink,
-                                Colors.teal,
+                                Colors.red.shade400,
+                                Colors.blue.shade400,
+                                Colors.green.shade400,
+                                Colors.orange.shade400,
+                                Colors.purple.shade400,
+                                Colors.pink.shade400,
+                                Colors.teal.shade400,
                               ];
                               return AlertDialog(
-                                title: const Text('Pilih Warna'),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                title: const Text(
+                                  'Pilih Warna',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF1F2937),
+                                  ),
+                                ),
                                 content: Wrap(
-                                  spacing: 8,
-                                  runSpacing: 8,
+                                  spacing: 12,
+                                  runSpacing: 12,
                                   children: colors.map((c) {
                                     return GestureDetector(
                                       onTap: () => Navigator.pop(context, c),
                                       child: Container(
-                                        width: 30,
-                                        height: 30,
+                                        width: 36,
+                                        height: 36,
                                         decoration: BoxDecoration(
                                           color: c,
                                           shape: BoxShape.circle,
                                           border: Border.all(
-                                            color: Colors.black26,
+                                            color: Colors.grey.shade300,
+                                            width: 2,
                                           ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withOpacity(
+                                                0.1,
+                                              ),
+                                              blurRadius: 4,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     );
@@ -198,12 +292,22 @@ class HariCard extends StatelessWidget {
                           }
                         },
                         child: Container(
-                          width: 30,
-                          height: 30,
+                          width: 36,
+                          height: 36,
                           decoration: BoxDecoration(
                             color: selectedColor,
                             shape: BoxShape.circle,
-                            border: Border.all(color: Colors.black26),
+                            border: Border.all(
+                              color: Colors.grey.shade300,
+                              width: 2,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -215,7 +319,13 @@ class HariCard extends StatelessWidget {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Batal'),
+                child: const Text(
+                  'Batal',
+                  style: TextStyle(
+                    color: Color(0xFF6B7280),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
               ElevatedButton(
                 onPressed: () async {
@@ -229,28 +339,47 @@ class HariCard extends StatelessWidget {
                         '#${selectedColor.value.toRadixString(16).substring(2)}',
                     namaGuru: namaGuruController.text.trim().isEmpty
                         ? null
-                        : namaGuruController.text.trim(), // Pass teacher name
+                        : namaGuruController.text.trim(),
                   );
 
                   if (success) {
                     onScheduleChanged?.call();
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Jadwal berhasil diupdate!'),
-                        backgroundColor: Colors.green,
+                      SnackBar(
+                        content: const Text('Jadwal berhasil diupdate!'),
+                        backgroundColor: Colors.green.shade600,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                     );
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Gagal mengupdate jadwal!'),
-                        backgroundColor: Colors.red,
+                      SnackBar(
+                        content: const Text('Gagal mengupdate jadwal!'),
+                        backgroundColor: Colors.red.shade600,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                     );
                   }
                   Navigator.pop(context);
                 },
-                child: const Text('Simpan'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue.shade600,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 2,
+                ),
+                child: const Text(
+                  'Simpan',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
               ),
             ],
           ),
@@ -261,229 +390,280 @@ class HariCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+    return FadeInUp(
+      duration: const Duration(milliseconds: 400),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 24),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.white, Colors.grey.shade50],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: const BoxDecoration(
-              color: Color(0xFF4A4877),
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
-              ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
             ),
-            child: Row(
-              children: [
-                const Icon(Icons.calendar_today, color: Colors.white, size: 20),
-                const SizedBox(width: 8),
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    '${pelajaran.length} kegiatan',
-                    style: const TextStyle(color: Colors.white, fontSize: 12),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Body
-          if (pelajaran.isEmpty)
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             Container(
               padding: const EdgeInsets.all(20),
-              child: Center(
-                child: Column(
-                  children: [
-                    Icon(
-                      Icons.schedule_outlined,
-                      size: 32,
-                      color: Colors.grey[400],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Tidak ada kegiatan',
-                      style: TextStyle(color: Colors.grey[500], fontSize: 14),
-                    ),
-                  ],
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [const Color(0xFF4A4877), const Color(0xFF6B5FA9)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
                 ),
               ),
-            )
-          else
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: pelajaran.length,
-              itemBuilder: (context, index) {
-                final item = pelajaran[index];
-                final isLast = index == pelajaran.length - 1;
-
-                return Container(
-                  margin: EdgeInsets.only(
-                    left: 20,
-                    right: 20,
-                    top: index == 0 ? 16 : 0,
-                    bottom: isLast ? 20 : 12,
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.calendar_today,
+                    color: Colors.white.withOpacity(0.9),
+                    size: 22,
                   ),
-                  decoration: BoxDecoration(
-                    color: item.warna.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: item.warna.withOpacity(0.3),
-                      width: 1,
+                  const SizedBox(width: 12),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
                     ),
                   ),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 6,
                     ),
-                    leading: Container(
-                      width: 4,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: item.warna,
-                        borderRadius: BorderRadius.circular(2),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.25),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.3),
+                        width: 1,
                       ),
                     ),
-                    title: Text(
-                      item.nama,
-                      style: const TextStyle(
+                    child: Text(
+                      '${pelajaran.length} kegiatan',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                        color: Color(0xFF1F2937),
                       ),
                     ),
-                    subtitle: Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Row(
-                        children: [
-                          // Teacher name section - positioned on the left
-                          if (item.namaGuru != null &&
-                              item.namaGuru!.isNotEmpty) ...[
-                            Icon(
-                              Icons.person,
-                              size: 14,
-                              color: Colors.grey[600],
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              item.namaGuru!,
-                              style: TextStyle(
-                                color: Colors.grey[700],
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Container(
-                              width: 1,
-                              height: 12,
-                              color: Colors.grey[400],
-                            ),
-                            const SizedBox(width: 12),
-                          ],
-                          // Time section - positioned on the right of teacher name
-                          Icon(
-                            Icons.access_time,
-                            size: 14,
-                            color: Colors.grey[600],
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            item.jam,
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 14,
-                            ),
+                  ),
+                ],
+              ),
+            ),
+            if (pelajaran.isEmpty)
+              Container(
+                padding: const EdgeInsets.all(24),
+                child: Center(
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.schedule_outlined,
+                        size: 40,
+                        color: Colors.grey.shade400,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Tidak ada kegiatan',
+                        style: TextStyle(
+                          color: Colors.grey.shade500,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: pelajaran.length,
+                itemBuilder: (context, index) {
+                  final item = pelajaran[index];
+                  final isLast = index == pelajaran.length - 1;
+
+                  return FadeInUp(
+                    duration: Duration(milliseconds: 400 + (index * 100)),
+                    child: Container(
+                      margin: EdgeInsets.only(
+                        left: 16,
+                        right: 16,
+                        top: index == 0 ? 16 : 8,
+                        bottom: isLast ? 20 : 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: item.warna.withOpacity(0.2),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: item.warna.withOpacity(0.1),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
                           ),
                         ],
                       ),
-                    ),
-                    trailing: PopupMenuButton<String>(
-                      icon: Icon(Icons.more_vert, color: Colors.grey[600]),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        leading: Container(
+                          width: 6,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: item.warna,
+                            borderRadius: BorderRadius.circular(3),
+                          ),
+                        ),
+                        title: Text(
+                          item.nama,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 17,
+                            color: Color(0xFF1F2937),
+                          ),
+                        ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (item.namaGuru != null &&
+                                item.namaGuru!.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.person,
+                                      size: 16,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(
+                                        item.namaGuru!,
+                                        style: TextStyle(
+                                          color: Colors.grey.shade700,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.access_time,
+                                    size: 16,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    '${item.waktuMulai} - ${item.waktuSelesai}',
+                                    style: TextStyle(
+                                      color: Colors.grey.shade600,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        trailing: PopupMenuButton<String>(
+                          icon: Icon(
+                            Icons.more_vert,
+                            color: Colors.grey.shade600,
+                            size: 24,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          itemBuilder: (context) => [
+                            PopupMenuItem(
+                              value: 'edit',
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.edit,
+                                    color: Colors.blue.shade600,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    'Edit',
+                                    style: TextStyle(
+                                      color: Colors.blue.shade600,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            PopupMenuItem(
+                              value: 'delete',
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.delete_outline,
+                                    color: Colors.red.shade600,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    'Hapus',
+                                    style: TextStyle(
+                                      color: Colors.red.shade600,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                          onSelected: (value) {
+                            if (value == 'edit') {
+                              _showEditDialog(context, item);
+                            } else if (value == 'delete') {
+                              _deleteSchedule(context, item);
+                            }
+                          },
+                        ),
                       ),
-                      itemBuilder: (context) => [
-                        PopupMenuItem(
-                          value: 'edit',
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.edit,
-                                color: Colors.blue,
-                                size: 20,
-                              ),
-                              const SizedBox(width: 8),
-                              const Text(
-                                'Edit',
-                                style: TextStyle(color: Colors.blue),
-                              ),
-                            ],
-                          ),
-                        ),
-                        PopupMenuItem(
-                          value: 'delete',
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.delete_outline,
-                                color: Colors.red,
-                                size: 20,
-                              ),
-                              const SizedBox(width: 8),
-                              const Text(
-                                'Hapus',
-                                style: TextStyle(color: Colors.red),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                      onSelected: (value) {
-                        if (value == 'edit') {
-                          _showEditDialog(context, item);
-                        } else if (value == 'delete') {
-                          _deleteSchedule(context, item);
-                        }
-                      },
                     ),
-                  ),
-                );
-              },
-            ),
-        ],
+                  );
+                },
+              ),
+          ],
+        ),
       ),
     );
   }

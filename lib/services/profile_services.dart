@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_project3/services/user_session.dart';
 import 'package:flutter_project3/supabase/supabase_connect.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -38,33 +39,120 @@ class ProfileService {
     }
   }
 
+  // Check and request permissions for mobile
+  static Future<bool> _checkPermissions() async {
+    if (kIsWeb) return true;
+
+    try {
+      // For Android 13+ (API level 33+), we need different permissions
+      if (Platform.isAndroid) {
+        final androidInfo = await _getAndroidVersion();
+        if (androidInfo >= 33) {
+          // Android 13+ uses granular media permissions
+          var status = await Permission.photos.status;
+          if (status.isDenied) {
+            status = await Permission.photos.request();
+          }
+          return status.isGranted;
+        } else {
+          // Android 12 and below
+          var status = await Permission.storage.status;
+          if (status.isDenied) {
+            status = await Permission.storage.request();
+          }
+          return status.isGranted;
+        }
+      } else if (Platform.isIOS) {
+        var status = await Permission.photos.status;
+        if (status.isDenied) {
+          status = await Permission.photos.request();
+        }
+        return status.isGranted;
+      }
+      return true;
+    } catch (e) {
+      print('Error checking permissions: $e');
+      return false;
+    }
+  }
+
+  static Future<int> _getAndroidVersion() async {
+    try {
+      // Simple way to check Android version
+      final result = await Process.run('getprop', ['ro.build.version.sdk']);
+      return int.tryParse(result.stdout.toString().trim()) ?? 30;
+    } catch (e) {
+      print('Error getting Android version: $e');
+      return 30; // Default to API level 30
+    }
+  }
+
   static Future<String?> uploadProfilePicture(String filePath) async {
     try {
+      // Check permissions first
+      final hasPermission = await _checkPermissions();
+      if (!hasPermission) {
+        print('Storage permission denied');
+        return null;
+      }
+
       final userId = UserSession.getCurrentUserId();
       if (userId == null) {
         print('No authenticated user');
         return null;
       }
 
+      // Verify file exists and is readable
+      final file = File(filePath);
+      if (!await file.exists()) {
+        print('File does not exist: $filePath');
+        return null;
+      }
+
+      // Check file size (limit to 5MB)
+      final fileSize = await file.length();
+      if (fileSize > 5 * 1024 * 1024) {
+        print('File too large: ${fileSize / (1024 * 1024)}MB');
+        return null;
+      }
+
       await _deleteOldProfilePicture(userId);
       final fileName =
           'profile_${userId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      print('Uploading mobile file: $fileName');
+      print('Uploading mobile file: $fileName, size: ${fileSize / 1024}KB');
 
+      // Try reading file as bytes first for mobile
+      Uint8List fileBytes;
+      try {
+        fileBytes = await file.readAsBytes();
+        print('File read successfully as bytes: ${fileBytes.length} bytes');
+      } catch (readError) {
+        print('Error reading file as bytes: $readError');
+        return null;
+      }
+
+      // Upload using bytes instead of File object for better mobile compatibility
       final response = await _client.storage
           .from('profile_pictures')
-          .upload(
+          .uploadBinary(
             fileName,
-            File(filePath),
-            fileOptions: const FileOptions(upsert: true),
+            fileBytes,
+            fileOptions: const FileOptions(
+              upsert: true,
+              contentType: 'image/jpeg',
+            ),
           );
 
       print('Upload response: $response');
+
+      // Create signed URL
       final signedUrl = await _client.storage
           .from('profile_pictures')
           .createSignedUrl(fileName, 60 * 60 * 24 * 365 * 10);
 
       print('Mobile upload complete - Signed URL: $signedUrl');
+
+      // Update database
       await _client
           .from('users')
           .update({
@@ -74,10 +162,18 @@ class ProfileService {
           .eq('user_id', userId);
 
       print('Database updated with new profile picture URL');
+
+      // Update local session
+      await UserSession.updateUserField('profile_picture', signedUrl);
+
       return signedUrl;
     } catch (e) {
       print('Error uploading profile picture: $e');
-      print('Error details: ${e.toString()}');
+      print('Error type: ${e.runtimeType}');
+      if (e is StorageException) {
+        print('Storage error: ${e.message}');
+        print('Storage error details: ${e.error}');
+      }
       return null;
     }
   }
@@ -90,10 +186,18 @@ class ProfileService {
         return null;
       }
 
+      // Check file size (limit to 5MB)
+      if (imageBytes.length > 5 * 1024 * 1024) {
+        print('File too large: ${imageBytes.length / (1024 * 1024)}MB');
+        return null;
+      }
+
       await _deleteOldProfilePicture(userId);
       final fileName =
           'profile_${userId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      print('Uploading web file: $fileName');
+      print(
+        'Uploading web file: $fileName, size: ${imageBytes.length / 1024}KB',
+      );
 
       final response = await _client.storage
           .from('profile_pictures')
@@ -107,11 +211,13 @@ class ProfileService {
           );
 
       print('Upload response: $response');
+
       final signedUrl = await _client.storage
           .from('profile_pictures')
           .createSignedUrl(fileName, 60 * 60 * 24 * 365 * 10);
 
       print('Web upload complete - Signed URL: $signedUrl');
+
       await _client
           .from('users')
           .update({
@@ -121,10 +227,18 @@ class ProfileService {
           .eq('user_id', userId);
 
       print('Database updated with new profile picture URL');
+
+      // Update local session
+      await UserSession.updateUserField('profile_picture', signedUrl);
+
       return signedUrl;
     } catch (e) {
       print('Error uploading profile picture for web: $e');
-      print('Error details: ${e.toString()}');
+      print('Error type: ${e.runtimeType}');
+      if (e is StorageException) {
+        print('Storage error: ${e.message}');
+        print('Storage error details: ${e.error}');
+      }
       return null;
     }
   }
@@ -144,6 +258,7 @@ class ProfileService {
       return true;
     } catch (e) {
       print('Error changing password: $e');
+      print('Error type: ${e.runtimeType}');
       return false;
     }
   }
@@ -212,6 +327,13 @@ class ProfileService {
       print('Updating user profile with: $updates');
       await _client.from('users').update(updates).eq('user_id', userId);
       print('User profile updated successfully');
+
+      // Update local session
+      await UserSession.updateUserField('nama', nama);
+      if (profilePictureUrl != null) {
+        await UserSession.updateUserField('profile_picture', profilePictureUrl);
+      }
+
       return true;
     } catch (e) {
       print('Error updating user profile: $e');
@@ -223,7 +345,7 @@ class ProfileService {
     try {
       final updatedUser = await getUserProfile();
       if (updatedUser != null) {
-        UserSession.setCurrentUser(updatedUser);
+        await UserSession.setCurrentUser(updatedUser);
         print('User session refreshed successfully');
       }
     } catch (e) {
