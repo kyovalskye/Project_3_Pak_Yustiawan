@@ -159,4 +159,26 @@ class DatabaseService {
       return false;
     }
   }
+
+  static Future<bool> changePassword({
+    required String userId,
+    required String newPassword,
+  }) async {
+    try {
+      final hashedPassword = _hashPassword(newPassword);
+
+      await _client
+          .from('users')
+          .update({
+            'password': hashedPassword,
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('user_id', userId);
+
+      return true;
+    } catch (e) {
+      print('Error changing password: $e');
+      return false;
+    }
+  }
 }

@@ -1,21 +1,22 @@
-// main.dart
 import 'package:flutter/material.dart';
-import 'package:flutter_project3/pages/login_page.dart';
-import 'package:flutter_project3/supabase/supabase_connect.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_project3/services/user_session.dart';
+import 'package:flutter_project3/pages/login_page.dart'; // Adjust import path as needed
+import 'package:flutter_project3/pages/body.dart';
+import 'package:flutter_project3/widgets/header.dart';
 
 void main() async {
+  // Ensure Flutter bindings are initialized
   WidgetsFlutterBinding.ensureInitialized();
 
-  try {
-    // Initialize Supabase menggunakan konfigurasi dari .env
-    await DatabaseConfig.initialize();
-    print('Supabase initialized successfully');
-  } catch (e) {
-    print('Error initializing Supabase: $e');
-    // Tampilkan layar error jika inisialisasi gagal (opsional)
-    runApp(const ErrorApp());
-    return;
-  }
+  // Initialize Supabase BEFORE running the app
+  await Supabase.initialize(
+    url: 'https://xakbfanscyjlzwmdzabj.supabase.co', // Replace with your Supabase URL
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhha2JmYW5zY3lqbHp3bWR6YWJqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ5MDE4NjQsImV4cCI6MjA3MDQ3Nzg2NH0.dmmmCC7GnXMUbp4PyWo_muczhVCkYgYmV5TaHW0ebt0', // Replace with your Supabase anon key
+  );
+
+  // Load user session from SharedPreferences
+  await UserSession.loadUserFromPrefs();
 
   runApp(const MyApp());
 }
@@ -26,36 +27,15 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Jadwal Kegiatan',
-      debugShowCheckedModeBanner: false,
+      title: 'Flutter Demo',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF4A4877),
-          foregroundColor: Colors.white,
-        ),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        useMaterial3: true,
       ),
-      home: const Login(), // Mulai dengan halaman login
-    );
-  }
-}
-
-// Layar error jika inisialisasi gagal (opsional)
-class ErrorApp extends StatelessWidget {
-  const ErrorApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        body: Center(
-          child: Text(
-            'Gagal menginisialisasi aplikasi. Periksa konfigurasi Supabase.',
-            style: TextStyle(color: Colors.red, fontSize: 16),
-            textAlign: TextAlign.center,
-          ),
-        ),
-      ),
+      home: UserSession.isLoggedIn()
+          ? const Scaffold(body: Body(), appBar: Header())
+          : const Login(), // Adjust class name as needed
+      debugShowCheckedModeBanner: false,
     );
   }
 }

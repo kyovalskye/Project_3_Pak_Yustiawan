@@ -30,6 +30,39 @@ class _SettingsPageState extends State<SettingsPage>
     super.dispose();
   }
 
+  // Helper method to parse color from different formats
+  Color _parseColor(String hexColor) {
+    try {
+      // Remove any whitespace
+      hexColor = hexColor.trim();
+
+      // Handle #RRGGBB format
+      if (hexColor.startsWith('#')) {
+        hexColor = hexColor.substring(1); // Remove #
+        // Add alpha channel if not present
+        if (hexColor.length == 6) {
+          hexColor = 'FF$hexColor';
+        }
+        return Color(int.parse(hexColor, radix: 16));
+      }
+
+      // Handle 0xFFRRGGBB format
+      if (hexColor.startsWith('0x')) {
+        return Color(int.parse(hexColor));
+      }
+
+      // Handle RRGGBB or FFRRGGBB format (no prefix)
+      if (hexColor.length == 6) {
+        hexColor = 'FF$hexColor'; // Add alpha channel
+      }
+      return Color(int.parse(hexColor, radix: 16));
+    } catch (e) {
+      print('Error parsing color $hexColor: $e');
+      // Return a default color if parsing fails
+      return const Color(0xFF6366F1);
+    }
+  }
+
   Future<void> _loadMasterData() async {
     setState(() => isLoadingMasterData = true);
     try {
@@ -189,9 +222,7 @@ class _SettingsPageState extends State<SettingsPage>
       itemCount: masterJadwalList.length,
       itemBuilder: (context, index) {
         final jadwal = masterJadwalList[index];
-        final color = Color(
-          int.parse(jadwal['hex_color'].replaceAll('0x', '0xFF')),
-        );
+        final color = _parseColor(jadwal['hex_color']); // Use the helper method
         return Container(
           margin: EdgeInsets.only(
             bottom: index == masterJadwalList.length - 1 ? 0 : 12,
@@ -236,16 +267,6 @@ class _SettingsPageState extends State<SettingsPage>
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
                       ),
-                    ),
-                  ],
-                ),
-                Row(
-                  children: [
-                    Icon(Icons.access_time, size: 14, color: Colors.grey[600]),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${jadwal['waktu_mulai']} - ${jadwal['waktu_selesai']}',
-                      style: TextStyle(color: Colors.grey[600], fontSize: 14),
                     ),
                   ],
                 ),

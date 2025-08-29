@@ -12,125 +12,12 @@ class _AddMasterDataModalState extends State<AddMasterDataModal> {
   final TextEditingController _namaGuruController = TextEditingController();
   final TextEditingController _namaPelajaranController =
       TextEditingController();
-  String? _selectedWaktuMulai;
-  String? _selectedWaktuSelesai;
+
   Color _selectedColor = const Color(0xFF2196F3);
   String? _errorMessage;
   bool _isLoading = false;
   bool _isLoadingData = true;
   List<Map<String, String>> _masterJadwalList = [];
-
-  // Daftar waktu yang tersedia
-  final List<String> _timeOptions = [
-    '6:30',
-    '7:10',
-    '7:50',
-    '8:30',
-    '9:10',
-    '9:40',
-    '10:20',
-    '11:00',
-    '11:40',
-    '12:20',
-    '13:00',
-    '13:40',
-    '14:20',
-  ];
-
-  // Palette warna yang sama seperti di AddModal.dart
-  final List<List<Color>> _colorPalettes = [
-    // Palette Merah
-    [
-      const Color(0xFFFFEBEE),
-      const Color(0xFFFFCDD2),
-      const Color(0xFFEF9A9A),
-      const Color(0xFFE57373),
-      const Color(0xFFEF5350),
-      const Color(0xFFF44336),
-      const Color(0xFFE53935),
-      const Color(0xFFD32F2F),
-      const Color(0xFFC62828),
-      const Color(0xFFB71C1C),
-    ],
-    // Palette Pink
-    [
-      const Color(0xFFFCE4EC),
-      const Color(0xFFF8BBD9),
-      const Color(0xFFF48FB1),
-      const Color(0xFFF06292),
-      const Color(0xFFEC407A),
-      const Color(0xFFE91E63),
-      const Color(0xFFD81B60),
-      const Color(0xFFC2185B),
-      const Color(0xFFAD1457),
-      const Color(0xFF880E4F),
-    ],
-    // Palette Ungu
-    [
-      const Color(0xFFF3E5F5),
-      const Color(0xFFE1BEE7),
-      const Color(0xFFCE93D8),
-      const Color(0xFFBA68C8),
-      const Color(0xFFAB47BC),
-      const Color(0xFF9C27B0),
-      const Color(0xFF8E24AA),
-      const Color(0xFF7B1FA2),
-      const Color(0xFF6A1B9A),
-      const Color(0xFF4A148C),
-    ],
-    // Palette Biru
-    [
-      const Color(0xFFE3F2FD),
-      const Color(0xFFBBDEFB),
-      const Color(0xFF90CAF9),
-      const Color(0xFF64B5F6),
-      const Color(0xFF42A5F5),
-      const Color(0xFF2196F3),
-      const Color(0xFF1E88E5),
-      const Color(0xFF1976D2),
-      const Color(0xFF1565C0),
-      const Color(0xFF0D47A1),
-    ],
-    // Palette Hijau
-    [
-      const Color(0xFFE8F5E8),
-      const Color(0xFFC8E6C9),
-      const Color(0xFFA5D6A7),
-      const Color(0xFF81C784),
-      const Color(0xFF66BB6A),
-      const Color(0xFF4CAF50),
-      const Color(0xFF43A047),
-      const Color(0xFF388E3C),
-      const Color(0xFF2E7D32),
-      const Color(0xFF1B5E20),
-    ],
-    // Palette Kuning/Orange
-    [
-      const Color(0xFFFFF8E1),
-      const Color(0xFFFFECB3),
-      const Color(0xFFFFE082),
-      const Color(0xFFFFD54F),
-      const Color(0xFFFFCA28),
-      const Color(0xFFFFC107),
-      const Color(0xFFFFB300),
-      const Color(0xFFFFA000),
-      const Color(0xFFFF8F00),
-      const Color(0xFFFF6F00),
-    ],
-    // Palette Abu-abu
-    [
-      const Color(0xFFFAFAFA),
-      const Color(0xFFF5F5F5),
-      const Color(0xFFEEEEEE),
-      const Color(0xFFE0E0E0),
-      const Color(0xFFBDBDBD),
-      const Color(0xFF9E9E9E),
-      const Color(0xFF757575),
-      const Color(0xFF616161),
-      const Color(0xFF424242),
-      const Color(0xFF212121),
-    ],
-  ];
 
   @override
   void initState() {
@@ -143,6 +30,33 @@ class _AddMasterDataModalState extends State<AddMasterDataModal> {
     _namaGuruController.dispose();
     _namaPelajaranController.dispose();
     super.dispose();
+  }
+
+  // Helper method to parse color from different formats (same as original)
+  Color _parseColor(String hexColor) {
+    try {
+      hexColor = hexColor.trim();
+
+      if (hexColor.startsWith('#')) {
+        hexColor = hexColor.substring(1);
+        if (hexColor.length == 6) {
+          hexColor = 'FF$hexColor';
+        }
+        return Color(int.parse(hexColor, radix: 16));
+      }
+
+      if (hexColor.startsWith('0x')) {
+        return Color(int.parse(hexColor));
+      }
+
+      if (hexColor.length == 6) {
+        hexColor = 'FF$hexColor';
+      }
+      return Color(int.parse(hexColor, radix: 16));
+    } catch (e) {
+      print('Error parsing color $hexColor: $e');
+      return const Color(0xFF6366F1);
+    }
   }
 
   Future<void> _loadMasterData() async {
@@ -159,22 +73,7 @@ class _AddMasterDataModalState extends State<AddMasterDataModal> {
     }
   }
 
-  List<String> _getAvailableEndTimes() {
-    if (_selectedWaktuMulai == null) return _timeOptions;
-    return _timeOptions
-        .where((time) => _isValidTimeSequence(_selectedWaktuMulai!, time))
-        .toList();
-  }
-
-  bool _isValidTimeSequence(String startTime, String endTime) {
-    final startParts = startTime.split(':');
-    final endParts = endTime.split(':');
-    final startMinutes =
-        int.parse(startParts[0]) * 60 + int.parse(startParts[1]);
-    final endMinutes = int.parse(endParts[0]) * 60 + int.parse(endParts[1]);
-    return endMinutes > startMinutes;
-  }
-
+  // Color picker dialog (from AddModal)
   void _showColorPickerDialog() {
     showDialog(
       context: context,
@@ -185,12 +84,17 @@ class _AddMasterDataModalState extends State<AddMasterDataModal> {
             return AlertDialog(
               title: const Text(
                 'Pilih Warna',
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 18),
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 18,
+                  color: Colors.black87,
+                ),
               ),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    // Preview Container
                     Container(
                       width: double.infinity,
                       height: 60,
@@ -214,75 +118,22 @@ class _AddMasterDataModalState extends State<AddMasterDataModal> {
                         ),
                       ),
                     ),
-                    SizedBox(
-                      width: 300,
-                      height: 280,
-                      child: ListView.builder(
-                        itemCount: _colorPalettes.length,
-                        itemBuilder: (context, paletteIndex) {
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: _colorPalettes[paletteIndex]
-                                  .map(
-                                    (color) => GestureDetector(
-                                      onTap: () {
-                                        setDialogState(() {
-                                          tempSelectedColor = color;
-                                        });
-                                      },
-                                      child: Container(
-                                        width: 28,
-                                        height: 28,
-                                        decoration: BoxDecoration(
-                                          color: color,
-                                          borderRadius: BorderRadius.circular(
-                                            6,
-                                          ),
-                                          border: Border.all(
-                                            color: tempSelectedColor == color
-                                                ? Colors.black87
-                                                : Colors.grey.withOpacity(0.3),
-                                            width: tempSelectedColor == color
-                                                ? 2.5
-                                                : 0.5,
-                                          ),
-                                          boxShadow: tempSelectedColor == color
-                                              ? [
-                                                  BoxShadow(
-                                                    color: color.withOpacity(
-                                                      0.4,
-                                                    ),
-                                                    blurRadius: 8,
-                                                    spreadRadius: 1,
-                                                  ),
-                                                ]
-                                              : null,
-                                        ),
-                                        child: tempSelectedColor == color
-                                            ? Icon(
-                                                Icons.check,
-                                                color: _getTextColor(color),
-                                                size: 16,
-                                              )
-                                            : null,
-                                      ),
-                                    ),
-                                  )
-                                  .toList(),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
+                    // Color Picker Widget
+                    _buildColorPicker(tempSelectedColor, (Color color) {
+                      setDialogState(() {
+                        tempSelectedColor = color;
+                      });
+                    }),
                   ],
                 ),
               ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Batal'),
+                  child: const Text(
+                    'Batal',
+                    style: TextStyle(color: Colors.black87),
+                  ),
                 ),
                 ElevatedButton(
                   onPressed: () {
@@ -305,6 +156,232 @@ class _AddMasterDataModalState extends State<AddMasterDataModal> {
     );
   }
 
+  // Build color picker widget (from AddModal)
+  Widget _buildColorPicker(Color currentColor, Function(Color) onColorChanged) {
+    HSVColor hsvColor = HSVColor.fromColor(currentColor);
+
+    return SizedBox(
+      width: 300,
+      height: 280,
+      child: Column(
+        children: [
+          // Hue Slider
+          Container(
+            height: 40,
+            margin: const EdgeInsets.only(bottom: 10),
+            child: Row(
+              children: [
+                const SizedBox(width: 8),
+                const Text(
+                  'Hue:',
+                  style: TextStyle(fontSize: 12, color: Colors.black87),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: SliderTheme(
+                    data: SliderTheme.of(context).copyWith(
+                      trackHeight: 20,
+                      thumbShape: const RoundSliderThumbShape(
+                        enabledThumbRadius: 8,
+                      ),
+                    ),
+                    child: Slider(
+                      value: hsvColor.hue,
+                      min: 0,
+                      max: 360,
+                      onChanged: (value) {
+                        hsvColor = hsvColor.withHue(value);
+                        onColorChanged(hsvColor.toColor());
+                      },
+                      activeColor: HSVColor.fromAHSV(
+                        1.0,
+                        hsvColor.hue,
+                        1.0,
+                        1.0,
+                      ).toColor(),
+                      inactiveColor: Colors.grey[300],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Saturation Slider
+          Container(
+            height: 40,
+            margin: const EdgeInsets.only(bottom: 10),
+            child: Row(
+              children: [
+                const Text(
+                  'Saturation:',
+                  style: TextStyle(fontSize: 12, color: Colors.black87),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: SliderTheme(
+                    data: SliderTheme.of(context).copyWith(
+                      trackHeight: 20,
+                      thumbShape: const RoundSliderThumbShape(
+                        enabledThumbRadius: 8,
+                      ),
+                    ),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                        gradient: LinearGradient(
+                          colors: [
+                            HSVColor.fromAHSV(
+                              1.0,
+                              hsvColor.hue,
+                              0.0,
+                              hsvColor.value,
+                            ).toColor(),
+                            HSVColor.fromAHSV(
+                              1.0,
+                              hsvColor.hue,
+                              1.0,
+                              hsvColor.value,
+                            ).toColor(),
+                          ],
+                        ),
+                      ),
+                      child: Slider(
+                        value: hsvColor.saturation,
+                        min: 0,
+                        max: 1,
+                        onChanged: (value) {
+                          hsvColor = hsvColor.withSaturation(value);
+                          onColorChanged(hsvColor.toColor());
+                        },
+                        activeColor: Colors.transparent,
+                        inactiveColor: Colors.transparent,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Value/Brightness Slider
+          Container(
+            height: 40,
+            margin: const EdgeInsets.only(bottom: 10),
+            child: Row(
+              children: [
+                const Text(
+                  'Brightness:',
+                  style: TextStyle(fontSize: 12, color: Colors.black87),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: SliderTheme(
+                    data: SliderTheme.of(context).copyWith(
+                      trackHeight: 20,
+                      thumbShape: const RoundSliderThumbShape(
+                        enabledThumbRadius: 8,
+                      ),
+                    ),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                        gradient: LinearGradient(
+                          colors: [
+                            HSVColor.fromAHSV(
+                              1.0,
+                              hsvColor.hue,
+                              hsvColor.saturation,
+                              0.0,
+                            ).toColor(),
+                            HSVColor.fromAHSV(
+                              1.0,
+                              hsvColor.hue,
+                              hsvColor.saturation,
+                              1.0,
+                            ).toColor(),
+                          ],
+                        ),
+                      ),
+                      child: Slider(
+                        value: hsvColor.value,
+                        min: 0,
+                        max: 1,
+                        onChanged: (value) {
+                          hsvColor = hsvColor.withValue(value);
+                          onColorChanged(hsvColor.toColor());
+                        },
+                        activeColor: Colors.transparent,
+                        inactiveColor: Colors.transparent,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // Quick Color Presets
+          const Text(
+            'Warna Cepat:',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children:
+                [
+                      Colors.red,
+                      Colors.pink,
+                      Colors.purple,
+                      Colors.blue,
+                      Colors.cyan,
+                      Colors.green,
+                      Colors.yellow,
+                      Colors.orange,
+                      Colors.brown,
+                      Colors.grey,
+                    ]
+                    .map(
+                      (color) => GestureDetector(
+                        onTap: () => onColorChanged(color),
+                        child: Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: color,
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: currentColor == color
+                                  ? Colors.black87
+                                  : Colors.grey.withOpacity(0.3),
+                              width: currentColor == color ? 2.5 : 1,
+                            ),
+                          ),
+                          child: currentColor == color
+                              ? Icon(
+                                  Icons.check,
+                                  color: _getTextColor(color),
+                                  size: 16,
+                                )
+                              : null,
+                        ),
+                      ),
+                    )
+                    .toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
   Color _getTextColor(Color backgroundColor) {
     final brightness = backgroundColor.computeLuminance();
     return brightness > 0.5 ? Colors.black87 : Colors.white;
@@ -316,6 +393,7 @@ class _AddMasterDataModalState extends State<AddMasterDataModal> {
       _isLoading = true;
     });
 
+    // Validasi
     if (_namaGuruController.text.trim().isEmpty) {
       setState(() {
         _errorMessage = 'Nama guru harus diisi';
@@ -330,35 +408,13 @@ class _AddMasterDataModalState extends State<AddMasterDataModal> {
       });
       return;
     }
-    if (_selectedWaktuMulai == null) {
-      setState(() {
-        _errorMessage = 'Waktu mulai harus dipilih';
-        _isLoading = false;
-      });
-      return;
-    }
-    if (_selectedWaktuSelesai == null) {
-      setState(() {
-        _errorMessage = 'Waktu selesai harus dipilih';
-        _isLoading = false;
-      });
-      return;
-    }
-    if (!_isValidTimeSequence(_selectedWaktuMulai!, _selectedWaktuSelesai!)) {
-      setState(() {
-        _errorMessage = 'Waktu selesai harus setelah waktu mulai';
-        _isLoading = false;
-      });
-      return;
-    }
 
+    // Simpan data dengan user_id
     final success = await MasterDataService.addMasterJadwal(
       namaGuru: _namaGuruController.text.trim(),
       namaPelajaran: _namaPelajaranController.text.trim(),
       hexColor:
           '#${_selectedColor.value.toRadixString(16).substring(2).toUpperCase()}',
-      waktuMulai: _selectedWaktuMulai!,
-      waktuSelesai: _selectedWaktuSelesai!,
     );
 
     setState(() => _isLoading = false);
@@ -382,11 +438,7 @@ class _AddMasterDataModalState extends State<AddMasterDataModal> {
     setState(() {
       _namaGuruController.text = jadwal['nama_guru']!;
       _namaPelajaranController.text = jadwal['nama_pelajaran']!;
-      _selectedWaktuMulai = jadwal['waktu_mulai']!;
-      _selectedWaktuSelesai = jadwal['waktu_selesai']!;
-      _selectedColor = Color(
-        int.parse(jadwal['hex_color']!.replaceAll('0x', '0xFF')),
-      );
+      _selectedColor = _parseColor(jadwal['hex_color']!);
     });
   }
 
@@ -451,62 +503,24 @@ class _AddMasterDataModalState extends State<AddMasterDataModal> {
                       label: 'Nama Guru',
                       controller: _namaGuruController,
                       hint: 'Masukkan nama guru',
-                      icon: Icons.person_outline,
                     ),
                     const SizedBox(height: 16),
                     _buildTextFieldWithLabel(
                       label: 'Mata Pelajaran',
                       controller: _namaPelajaranController,
                       hint: 'Masukkan mata pelajaran',
-                      icon: Icons.book,
                     ),
                     const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildTimeDropdown(
-                            label: 'Waktu Mulai *',
-                            value: _selectedWaktuMulai,
-                            items: _timeOptions,
-                            onChanged: (v) {
-                              setState(() {
-                                _selectedWaktuMulai = v;
-                                if (_selectedWaktuSelesai != null &&
-                                    !_isValidTimeSequence(
-                                      v!,
-                                      _selectedWaktuSelesai!,
-                                    )) {
-                                  _selectedWaktuSelesai = null;
-                                }
-                              });
-                            },
-                            icon: Icons.access_time,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _buildTimeDropdown(
-                            label: 'Waktu Selesai *',
-                            value: _selectedWaktuSelesai,
-                            items: _getAvailableEndTimes(),
-                            onChanged: (v) =>
-                                setState(() => _selectedWaktuSelesai = v),
-                            icon: Icons.access_time_filled,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    _buildColorSelection(),
-                    const SizedBox(height: 8),
-                    Text(
-                      '* Wajib diisi',
+                    const Text(
+                      'Pilih Warna *',
                       style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
-                        fontStyle: FontStyle.italic,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF374151),
                       ),
                     ),
+                    const SizedBox(height: 12),
+                    _buildColorSelection(),
                     const SizedBox(height: 20),
                     if (_masterJadwalList.isNotEmpty) ...[
                       const Text(
@@ -522,11 +536,7 @@ class _AddMasterDataModalState extends State<AddMasterDataModal> {
                         spacing: 8,
                         runSpacing: 8,
                         children: _masterJadwalList.map((jadwal) {
-                          final color = Color(
-                            int.parse(
-                              jadwal['hex_color']!.replaceAll('0x', '0xFF'),
-                            ),
-                          );
+                          final color = _parseColor(jadwal['hex_color']!);
                           return GestureDetector(
                             onTap: () => _selectJadwal(jadwal),
                             child: Container(
@@ -538,8 +548,8 @@ class _AddMasterDataModalState extends State<AddMasterDataModal> {
                               ),
                               child: Text(
                                 jadwal['nama_pelajaran']!,
-                                style: TextStyle(
-                                  color: color,
+                                style: const TextStyle(
+                                  color: Colors.black,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -550,6 +560,15 @@ class _AddMasterDataModalState extends State<AddMasterDataModal> {
                       const SizedBox(height: 20),
                     ],
                     _buildColorPreview(),
+                    const SizedBox(height: 8),
+                    Text(
+                      '* Wajib diisi',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
                     const SizedBox(height: 28),
                     _buildActionButtons(),
                   ],
@@ -591,47 +610,6 @@ class _AddMasterDataModalState extends State<AddMasterDataModal> {
     required String label,
     required TextEditingController controller,
     required String hint,
-    required IconData icon,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF374151),
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: controller,
-          enabled: !_isLoading,
-          decoration: InputDecoration(
-            hintText: hint,
-            prefixIcon: Icon(icon, size: 20, color: const Color(0xFF6B7280)),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFD1D5DB)),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              vertical: 12,
-              horizontal: 16,
-            ),
-          ),
-          style: const TextStyle(fontSize: 14),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTimeDropdown({
-    required String label,
-    required String? value,
-    required List<String> items,
-    required ValueChanged<String?> onChanged,
-    required IconData icon,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -647,28 +625,23 @@ class _AddMasterDataModalState extends State<AddMasterDataModal> {
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            border: Border.all(color: const Color(0xFFD1D5DB)),
+            border: Border.all(color: const Color(0xFFE5E7EB)),
             borderRadius: BorderRadius.circular(12),
+            color: const Color(0xFFF9FAFB),
           ),
-          child: DropdownButtonFormField<String>(
-            value: value,
-            hint: Text(
-              'Pilih',
-              style: TextStyle(color: Colors.grey[500], fontSize: 14),
+          child: TextField(
+            controller: controller,
+            enabled: !_isLoading,
+            style: const TextStyle(
+              color: Color(0xFF374151),
+              fontWeight: FontWeight.w500,
             ),
-            items: items
-                .map((item) => DropdownMenuItem(value: item, child: Text(item)))
-                .toList(),
-            onChanged: _isLoading ? null : onChanged,
             decoration: InputDecoration(
-              prefixIcon: Icon(icon, size: 20, color: const Color(0xFF6B7280)),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
-              ),
+              hintText: hint,
+              hintStyle: const TextStyle(color: Color(0xFF9CA3AF)),
               border: InputBorder.none,
+              contentPadding: const EdgeInsets.all(16),
             ),
-            style: const TextStyle(fontSize: 14),
           ),
         ),
       ],
@@ -683,8 +656,9 @@ class _AddMasterDataModalState extends State<AddMasterDataModal> {
         height: 50,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          border: Border.all(color: const Color(0xFFD1D5DB)),
+          border: Border.all(color: const Color(0xFFE5E7EB)),
           borderRadius: BorderRadius.circular(12),
+          color: const Color(0xFFF9FAFB),
         ),
         child: Row(
           children: [
@@ -708,7 +682,7 @@ class _AddMasterDataModalState extends State<AddMasterDataModal> {
               ),
             ),
             const Icon(
-              Icons.keyboard_arrow_down,
+              Icons.palette_outlined,
               color: Color(0xFF6B7280),
               size: 20,
             ),
@@ -718,7 +692,7 @@ class _AddMasterDataModalState extends State<AddMasterDataModal> {
     );
   }
 
-  Widget _buildColorPreview() {
+Widget _buildColorPreview() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -769,24 +743,6 @@ class _AddMasterDataModalState extends State<AddMasterDataModal> {
                 const SizedBox(height: 4),
                 Text(
                   'Guru: ${_namaGuruController.text}',
-                  style: TextStyle(
-                    color: _getTextColor(_selectedColor).withOpacity(0.9),
-                    fontSize: 12,
-                    shadows: [
-                      Shadow(
-                        color: Colors.black.withOpacity(0.3),
-                        offset: const Offset(0, 1),
-                        blurRadius: 2,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-              if (_selectedWaktuMulai != null &&
-                  _selectedWaktuSelesai != null) ...[
-                const SizedBox(height: 4),
-                Text(
-                  '$_selectedWaktuMulai - $_selectedWaktuSelesai',
                   style: TextStyle(
                     color: _getTextColor(_selectedColor).withOpacity(0.9),
                     fontSize: 12,

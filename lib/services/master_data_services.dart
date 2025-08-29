@@ -1,4 +1,3 @@
-// master_data_services.dart
 import '../supabase/supabase_connect.dart';
 import '../services/user_session.dart';
 
@@ -42,8 +41,6 @@ class MasterDataService {
     required String namaGuru,
     required String namaPelajaran,
     required String hexColor,
-    required String waktuMulai,
-    required String waktuSelesai,
   }) async {
     try {
       final currentUserId = getCurrentUserId();
@@ -57,8 +54,6 @@ class MasterDataService {
         'nama_guru': namaGuru,
         'nama_pelajaran': namaPelajaran,
         'hex_color': hexColor,
-        'waktu_mulai': waktuMulai,
-        'waktu_selesai': waktuSelesai,
         'created_at': DateTime.now().toIso8601String(),
         'updated_at': DateTime.now().toIso8601String(),
       });
@@ -76,8 +71,6 @@ class MasterDataService {
     required String namaGuru,
     required String namaPelajaran,
     required String hexColor,
-    required String waktuMulai,
-    required String waktuSelesai,
   }) async {
     try {
       final currentUserId = getCurrentUserId();
@@ -106,8 +99,6 @@ class MasterDataService {
             'nama_guru': namaGuru,
             'nama_pelajaran': namaPelajaran,
             'hex_color': hexColor,
-            'waktu_mulai': waktuMulai,
-            'waktu_selesai': waktuSelesai,
             'updated_at': DateTime.now().toIso8601String(),
           })
           .eq('id', id)
@@ -167,9 +158,7 @@ class MasterDataService {
 
       final response = await _client
           .from('master_jadwal')
-          .select(
-            'id, nama_guru, nama_pelajaran, hex_color, waktu_mulai, waktu_selesai',
-          )
+          .select('id, nama_guru, nama_pelajaran, hex_color')
           .eq('user_id', currentUserId) // Filter by current user ID
           .order('nama_pelajaran');
 
@@ -180,8 +169,6 @@ class MasterDataService {
             'nama_guru': item['nama_guru'].toString(),
             'nama_pelajaran': item['nama_pelajaran'].toString(),
             'hex_color': item['hex_color'].toString(),
-            'waktu_mulai': item['waktu_mulai'].toString(),
-            'waktu_selesai': item['waktu_selesai'].toString(),
           },
         ),
       );
