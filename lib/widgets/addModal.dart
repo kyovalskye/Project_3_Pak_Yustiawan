@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/supabase_services.dart';
 import '../services/user_session.dart';
-import '../services/master_data_services.dart';
+import '../services/master_data_services.dart'; // Tambahkan impor untuk MasterDataService
 
 class AddModal extends StatefulWidget {
   final Function? onScheduleAdded;
@@ -27,171 +27,102 @@ class _AddModalState extends State<AddModal> {
     'Minggu',
   ];
 
-  // Time options disesuaikan dari 06:30 sampai 14:20 untuk semua hari
-  final List<String> _timeOptions = [
-    '06:30',
-    '07:00',
-    '07:30',
-    '08:00',
-    '08:30',
-    '09:00',
-    '09:30',
-    '10:00',
-    '10:30',
-    '11:00',
-    '11:30',
-    '12:00',
-    '12:30',
-    '13:00',
-    '13:30',
-    '14:00',
-    '14:20',
-  ];
-
-  // Palette warna yang lebih lengkap dan menarik
-  final List<List<Color>> _colorPalettes = [
-    // Palette Merah
-    [
-      const Color(0xFFFFEBEE),
-      const Color(0xFFFFCDD2),
-      const Color(0xFFEF9A9A),
-      const Color(0xFFE57373),
-      const Color(0xFFEF5350),
-      const Color(0xFFF44336),
-      const Color(0xFFE53935),
-      const Color(0xFFD32F2F),
-      const Color(0xFFC62828),
-      const Color(0xFFB71C1C),
+  final Map<String, List<String>> _timeOptions = {
+    'Senin': [
+      '7:10',
+      '7:50',
+      '8:30',
+      '9:10',
+      '9:40',
+      '10:20',
+      '11:00',
+      '11:40',
+      '12:20',
+      '13:00',
+      '13:40',
     ],
-    // Palette Pink
-    [
-      const Color(0xFFFCE4EC),
-      const Color(0xFFF8BBD9),
-      const Color(0xFFF48FB1),
-      const Color(0xFFF06292),
-      const Color(0xFFEC407A),
-      const Color(0xFFE91E63),
-      const Color(0xFFD81B60),
-      const Color(0xFFC2185B),
-      const Color(0xFFAD1457),
-      const Color(0xFF880E4F),
+    'Selasa': [
+      '6:30',
+      '7:10',
+      '7:50',
+      '8:30',
+      '9:10',
+      '9:40',
+      '10:20',
+      '11:00',
+      '11:40',
+      '12:20',
+      '13:00',
+      '13:40',
+      '14:20',
     ],
-    // Palette Ungu
-    [
-      const Color(0xFFF3E5F5),
-      const Color(0xFFE1BEE7),
-      const Color(0xFFCE93D8),
-      const Color(0xFFBA68C8),
-      const Color(0xFFAB47BC),
-      const Color(0xFF9C27B0),
-      const Color(0xFF8E24AA),
-      const Color(0xFF7B1FA2),
-      const Color(0xFF6A1B9A),
-      const Color(0xFF4A148C),
+    'Rabu': [
+      '6:30',
+      '7:10',
+      '7:50',
+      '8:30',
+      '9:10',
+      '9:40',
+      '10:20',
+      '11:00',
+      '11:40',
+      '12:20',
+      '13:00',
+      '13:40',
+      '14:20',
     ],
-    // Palette Biru
-    [
-      const Color(0xFFE3F2FD),
-      const Color(0xFFBBDEFB),
-      const Color(0xFF90CAF9),
-      const Color(0xFF64B5F6),
-      const Color(0xFF42A5F5),
-      const Color(0xFF2196F3),
-      const Color(0xFF1E88E5),
-      const Color(0xFF1976D2),
-      const Color(0xFF1565C0),
-      const Color(0xFF0D47A1),
+    'Kamis': [
+      '6:30',
+      '7:10',
+      '7:50',
+      '8:30',
+      '9:10',
+      '9:40',
+      '10:20',
+      '11:00',
+      '11:40',
+      '12:20',
+      '13:00',
+      '13:40',
+      '14:20',
     ],
-    // Palette Hijau
-    [
-      const Color(0xFFE8F5E8),
-      const Color(0xFFC8E6C9),
-      const Color(0xFFA5D6A7),
-      const Color(0xFF81C784),
-      const Color(0xFF66BB6A),
-      const Color(0xFF4CAF50),
-      const Color(0xFF43A047),
-      const Color(0xFF388E3C),
-      const Color(0xFF2E7D32),
-      const Color(0xFF1B5E20),
-    ],
-    // Palette Kuning/Orange
-    [
-      const Color(0xFFFFF8E1),
-      const Color(0xFFFFECB3),
-      const Color(0xFFFFE082),
-      const Color(0xFFFFD54F),
-      const Color(0xFFFFCA28),
-      const Color(0xFFFFC107),
-      const Color(0xFFFFB300),
-      const Color(0xFFFFA000),
-      const Color(0xFFFF8F00),
-      const Color(0xFFFF6F00),
-    ],
-    // Palette Abu-abu
-    [
-      const Color(0xFFFAFAFA),
-      const Color(0xFFF5F5F5),
-      const Color(0xFFEEEEEE),
-      const Color(0xFFE0E0E0),
-      const Color(0xFFBDBDBD),
-      const Color(0xFF9E9E9E),
-      const Color(0xFF757575),
-      const Color(0xFF616161),
-      const Color(0xFF424242),
-      const Color(0xFF212121),
-    ],
-  ];
+    'Jumat': ['6:30', '7:10', '7:50', '8:30', '9:10', '9:40', '10:20', '11:00'],
+    'Sabtu': ['6:30', '7:10', '7:50', '8:30', '9:10', '9:40', '10:20', '11:00'],
+    'Minggu': [],
+  };
 
   String _selectedHari = 'Senin';
   String? _selectedWaktuMulai;
   String? _selectedWaktuSelesai;
   Color _selectedColor = const Color(0xFF2196F3);
   bool _isLoading = false;
-  bool _isLoadingData = true;
-  List<Map<String, String>> _masterJadwalList = [];
-  String? _errorMessage;
+  bool _isLoadingMasterData = false; // State untuk loading master data
+  List<Map<String, String>> _masterJadwalList =
+      []; // State untuk menyimpan master data
 
   @override
   void initState() {
     super.initState();
-    _loadMasterData();
+    _updateTimeOptions();
+    _loadMasterData(); // Muat data master saat inisialisasi
   }
 
+  // Fungsi untuk memuat data master
   Future<void> _loadMasterData() async {
-    setState(() => _isLoadingData = true);
+    setState(() => _isLoadingMasterData = true);
     try {
       final jadwal = await MasterDataService.getMasterJadwalForDropdown();
       setState(() {
         _masterJadwalList = jadwal;
-        _isLoadingData = false;
+        _isLoadingMasterData = false;
       });
     } catch (e) {
-      setState(() {
-        _isLoadingData = false;
-        _errorMessage = 'Gagal memuat master data: ${e.toString()}';
-      });
-      print('Error loading master data: $e');
+      setState(() => _isLoadingMasterData = false);
+      _showSnackBar('Gagal memuat data master: ${e.toString()}', Colors.red);
     }
   }
 
-  List<String> _getAvailableEndTimes() {
-    if (_selectedWaktuMulai == null) return _timeOptions;
-    return _timeOptions
-        .where((time) => _isValidTimeSequence(_selectedWaktuMulai!, time))
-        .toList();
-  }
-
-  bool _isValidTimeSequence(String startTime, String endTime) {
-    final startParts = startTime.split(':');
-    final endParts = endTime.split(':');
-    final startMinutes =
-        int.parse(startParts[0]) * 60 + int.parse(startParts[1]);
-    final endMinutes = int.parse(endParts[0]) * 60 + int.parse(endParts[1]);
-    return endMinutes > startMinutes;
-  }
-
-  // Helper method to parse color (sama dengan add_master_data.dart)
+  // Fungsi untuk parsing warna
   Color _parseColor(String hexColor) {
     try {
       hexColor = hexColor.trim();
@@ -211,8 +142,51 @@ class _AddModalState extends State<AddModal> {
       return Color(int.parse(hexColor, radix: 16));
     } catch (e) {
       print('Error parsing color $hexColor: $e');
-      return const Color(0xFF2196F3); // Default color
+      return const Color(0xFF6366F1);
     }
+  }
+
+  // Fungsi untuk memilih data master
+  void _selectMasterJadwal(Map<String, String> jadwal) {
+    setState(() {
+      _namaKegiatanController.text = jadwal['nama_pelajaran']!;
+      _namaGuruController.text = jadwal['nama_guru']!;
+      _selectedColor = _parseColor(jadwal['hex_color']!);
+    });
+  }
+
+  void _updateTimeOptions() {
+    final availableTimes = _timeOptions[_selectedHari] ?? [];
+    if (availableTimes.isEmpty) {
+      _selectedWaktuMulai = null;
+      _selectedWaktuSelesai = null;
+    } else {
+      if (_selectedWaktuMulai != null &&
+          !availableTimes.contains(_selectedWaktuMulai)) {
+        _selectedWaktuMulai = null;
+      }
+      if (_selectedWaktuSelesai != null &&
+          !availableTimes.contains(_selectedWaktuSelesai)) {
+        _selectedWaktuSelesai = null;
+      }
+    }
+  }
+
+  List<String> _getAvailableEndTimes() {
+    final availableTimes = _timeOptions[_selectedHari] ?? [];
+    if (_selectedWaktuMulai == null) return availableTimes;
+    return availableTimes
+        .where((time) => _isValidTimeSequence(_selectedWaktuMulai!, time))
+        .toList();
+  }
+
+  bool _isValidTimeSequence(String startTime, String endTime) {
+    final startParts = startTime.split(':');
+    final endParts = endTime.split(':');
+    final startMinutes =
+        int.parse(startParts[0]) * 60 + int.parse(startParts[1]);
+    final endMinutes = int.parse(endParts[0]) * 60 + int.parse(endParts[1]);
+    return endMinutes > startMinutes;
   }
 
   void _showColorPickerDialog() {
@@ -235,6 +209,7 @@ class _AddModalState extends State<AddModal> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    // Preview Container
                     Container(
                       width: double.infinity,
                       height: 60,
@@ -258,68 +233,12 @@ class _AddModalState extends State<AddModal> {
                         ),
                       ),
                     ),
-                    SizedBox(
-                      width: 300,
-                      height: 280,
-                      child: ListView.builder(
-                        itemCount: _colorPalettes.length,
-                        itemBuilder: (context, paletteIndex) {
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: _colorPalettes[paletteIndex]
-                                  .map(
-                                    (color) => GestureDetector(
-                                      onTap: () {
-                                        setDialogState(() {
-                                          tempSelectedColor = color;
-                                        });
-                                      },
-                                      child: Container(
-                                        width: 28,
-                                        height: 28,
-                                        decoration: BoxDecoration(
-                                          color: color,
-                                          borderRadius: BorderRadius.circular(
-                                            6,
-                                          ),
-                                          border: Border.all(
-                                            color: tempSelectedColor == color
-                                                ? Colors.black87
-                                                : Colors.grey.withOpacity(0.3),
-                                            width: tempSelectedColor == color
-                                                ? 2.5
-                                                : 0.5,
-                                          ),
-                                          boxShadow: tempSelectedColor == color
-                                              ? [
-                                                  BoxShadow(
-                                                    color: color.withOpacity(
-                                                      0.4,
-                                                    ),
-                                                    blurRadius: 8,
-                                                    spreadRadius: 1,
-                                                  ),
-                                                ]
-                                              : null,
-                                        ),
-                                        child: tempSelectedColor == color
-                                            ? Icon(
-                                                Icons.check,
-                                                color: _getTextColor(color),
-                                                size: 16,
-                                              )
-                                            : null,
-                                      ),
-                                    ),
-                                  )
-                                  .toList(),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
+                    // Color Picker Widget
+                    _buildColorPicker(tempSelectedColor, (Color color) {
+                      setDialogState(() {
+                        tempSelectedColor = color;
+                      });
+                    }),
                   ],
                 ),
               ),
@@ -352,6 +271,231 @@ class _AddModalState extends State<AddModal> {
     );
   }
 
+  Widget _buildColorPicker(Color currentColor, Function(Color) onColorChanged) {
+    HSVColor hsvColor = HSVColor.fromColor(currentColor);
+
+    return SizedBox(
+      width: 300,
+      height: 280,
+      child: Column(
+        children: [
+          // Hue Slider
+          Container(
+            height: 40,
+            margin: const EdgeInsets.only(bottom: 10),
+            child: Row(
+              children: [
+                const SizedBox(width: 8),
+                const Text(
+                  'Hue:',
+                  style: TextStyle(fontSize: 12, color: Colors.black87),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: SliderTheme(
+                    data: SliderTheme.of(context).copyWith(
+                      trackHeight: 20,
+                      thumbShape: const RoundSliderThumbShape(
+                        enabledThumbRadius: 8,
+                      ),
+                    ),
+                    child: Slider(
+                      value: hsvColor.hue,
+                      min: 0,
+                      max: 360,
+                      onChanged: (value) {
+                        hsvColor = hsvColor.withHue(value);
+                        onColorChanged(hsvColor.toColor());
+                      },
+                      activeColor: HSVColor.fromAHSV(
+                        1.0,
+                        hsvColor.hue,
+                        1.0,
+                        1.0,
+                      ).toColor(),
+                      inactiveColor: Colors.grey[300],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Saturation Slider
+          Container(
+            height: 40,
+            margin: const EdgeInsets.only(bottom: 10),
+            child: Row(
+              children: [
+                const Text(
+                  'Saturation:',
+                  style: TextStyle(fontSize: 12, color: Colors.black87),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: SliderTheme(
+                    data: SliderTheme.of(context).copyWith(
+                      trackHeight: 20,
+                      thumbShape: const RoundSliderThumbShape(
+                        enabledThumbRadius: 8,
+                      ),
+                    ),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                        gradient: LinearGradient(
+                          colors: [
+                            HSVColor.fromAHSV(
+                              1.0,
+                              hsvColor.hue,
+                              0.0,
+                              hsvColor.value,
+                            ).toColor(),
+                            HSVColor.fromAHSV(
+                              1.0,
+                              hsvColor.hue,
+                              1.0,
+                              hsvColor.value,
+                            ).toColor(),
+                          ],
+                        ),
+                      ),
+                      child: Slider(
+                        value: hsvColor.saturation,
+                        min: 0,
+                        max: 1,
+                        onChanged: (value) {
+                          hsvColor = hsvColor.withSaturation(value);
+                          onColorChanged(hsvColor.toColor());
+                        },
+                        activeColor: Colors.transparent,
+                        inactiveColor: Colors.transparent,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Value/Brightness Slider
+          Container(
+            height: 40,
+            margin: const EdgeInsets.only(bottom: 10),
+            child: Row(
+              children: [
+                const Text(
+                  'Brightness:',
+                  style: TextStyle(fontSize: 12, color: Colors.black87),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: SliderTheme(
+                    data: SliderTheme.of(context).copyWith(
+                      trackHeight: 20,
+                      thumbShape: const RoundSliderThumbShape(
+                        enabledThumbRadius: 8,
+                      ),
+                    ),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                        gradient: LinearGradient(
+                          colors: [
+                            HSVColor.fromAHSV(
+                              1.0,
+                              hsvColor.hue,
+                              hsvColor.saturation,
+                              0.0,
+                            ).toColor(),
+                            HSVColor.fromAHSV(
+                              1.0,
+                              hsvColor.hue,
+                              hsvColor.saturation,
+                              1.0,
+                            ).toColor(),
+                          ],
+                        ),
+                      ),
+                      child: Slider(
+                        value: hsvColor.value,
+                        min: 0,
+                        max: 1,
+                        onChanged: (value) {
+                          hsvColor = hsvColor.withValue(value);
+                          onColorChanged(hsvColor.toColor());
+                        },
+                        activeColor: Colors.transparent,
+                        inactiveColor: Colors.transparent,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // Quick Color Presets
+          const Text(
+            'Warna Cepat:',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children:
+                [
+                      Colors.red,
+                      Colors.pink,
+                      Colors.purple,
+                      Colors.blue,
+                      Colors.cyan,
+                      Colors.green,
+                      Colors.yellow,
+                      Colors.orange,
+                      Colors.brown,
+                      Colors.grey,
+                    ]
+                    .map(
+                      (color) => GestureDetector(
+                        onTap: () => onColorChanged(color),
+                        child: Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: color,
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: currentColor == color
+                                  ? Colors.black87
+                                  : Colors.grey.withOpacity(0.3),
+                              width: currentColor == color ? 2.5 : 1,
+                            ),
+                          ),
+                          child: currentColor == color
+                              ? Icon(
+                                  Icons.check,
+                                  color: _getTextColor(color),
+                                  size: 16,
+                                )
+                              : null,
+                        ),
+                      ),
+                    )
+                    .toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
   Color _getTextColor(Color backgroundColor) {
     final brightness = backgroundColor.computeLuminance();
     return brightness > 0.5 ? Colors.black87 : Colors.white;
@@ -371,13 +515,13 @@ class _AddModalState extends State<AddModal> {
         final existingStartTime = _timeToMinutes(schedule['waktu_mulai']);
         final existingEndTime = _timeToMinutes(schedule['waktu_selesai']);
         if (newStartTime < existingEndTime && newEndTime > existingStartTime) {
-          return true; // Ada konflik
+          return true;
         }
       }
-      return false; // Tidak ada konflik
+      return false;
     } catch (e) {
       _showSnackBar('Error memeriksa konflik: ${e.toString()}', Colors.red);
-      return true; // Asumsikan ada konflik jika terjadi error
+      return true;
     }
   }
 
@@ -392,25 +536,15 @@ class _AddModalState extends State<AddModal> {
       return;
     }
 
-    if (_namaKegiatanController.text.trim().isEmpty) {
-      _showSnackBar('Nama kegiatan harus diisi', Colors.red);
-      return;
-    }
-
-    if (_selectedWaktuMulai == null || _selectedWaktuSelesai == null) {
-      _showSnackBar('Waktu mulai dan selesai harus dipilih', Colors.red);
+    if (_namaKegiatanController.text.trim().isEmpty ||
+        _selectedWaktuMulai == null ||
+        _selectedWaktuSelesai == null) {
+      _showSnackBar('Isi nama kegiatan dan waktu dulu', Colors.red);
       return;
     }
 
     if (!_isValidTimeSequence(_selectedWaktuMulai!, _selectedWaktuSelesai!)) {
-      _showSnackBar('Waktu selesai harus setelah waktu mulai', Colors.red);
-      return;
-    }
-
-    // Validasi apakah waktu yang dipilih tersedia
-    if (!_timeOptions.contains(_selectedWaktuMulai) ||
-        !_timeOptions.contains(_selectedWaktuSelesai)) {
-      _showSnackBar('Waktu yang dipilih tidak tersedia', Colors.red);
+      _showSnackBar('Waktu selesai harus setelah mulai', Colors.red);
       return;
     }
 
@@ -461,25 +595,6 @@ class _AddModalState extends State<AddModal> {
     }
   }
 
-  void _selectJadwal(Map<String, String> jadwal) {
-    setState(() {
-      _namaKegiatanController.text = jadwal['nama_pelajaran']!;
-      _namaGuruController.text = jadwal['nama_guru']!;
-      _selectedWaktuMulai = jadwal['waktu_mulai']!;
-      _selectedWaktuSelesai = jadwal['waktu_selesai']!;
-      _selectedColor = _parseColor(jadwal['hex_color']!);
-      _errorMessage = null;
-
-      // Validasi apakah waktu tersedia
-      if (!_timeOptions.contains(_selectedWaktuMulai) ||
-          !_timeOptions.contains(_selectedWaktuSelesai)) {
-        _errorMessage = 'Waktu dari master data tidak tersedia';
-        _selectedWaktuMulai = null;
-        _selectedWaktuSelesai = null;
-      }
-    });
-  }
-
   @override
   void dispose() {
     _namaKegiatanController.dispose();
@@ -501,6 +616,7 @@ class _AddModalState extends State<AddModal> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  // Header
                   Container(
                     padding: const EdgeInsets.symmetric(
                       vertical: 16,
@@ -537,214 +653,180 @@ class _AddModalState extends State<AddModal> {
                       ],
                     ),
                   ),
+                  // Konten utama
                   Expanded(
                     child: SingleChildScrollView(
                       padding: const EdgeInsets.all(16),
-                      child: _isLoadingData
-                          ? const Column(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildDropdown(
+                            'Pilih Hari',
+                            _selectedHari,
+                            _hariList,
+                            (v) {
+                              setState(() {
+                                _selectedHari = v!;
+                                _updateTimeOptions();
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          _buildTextField(
+                            'Nama Kegiatan *',
+                            _namaKegiatanController,
+                            'Contoh: Matematika',
+                            Icons.book,
+                          ),
+                          const SizedBox(height: 16),
+                          // Bagian untuk memilih master data
+                          if (_isLoadingMasterData)
+                            const Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 CircularProgressIndicator(
                                   color: Color(0xFF4A4877),
                                 ),
-                                SizedBox(height: 16),
-                                Text('Memuat data...'),
+                                SizedBox(height: 8),
+                                Text('Memuat data master...'),
                               ],
                             )
-                          : Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                          else if (_masterJadwalList.isNotEmpty) ...[
+                            const Text(
+                              'Pilih dari Master Data',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF374151),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: _masterJadwalList.map((jadwal) {
+                                final color = _parseColor(jadwal['hex_color']!);
+                                return GestureDetector(
+                                  onTap: () => _selectMasterJadwal(jadwal),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: color.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: color),
+                                    ),
+                                    child: Text(
+                                      jadwal['nama_pelajaran']!,
+                                      style: const TextStyle(
+                                        color: Colors.black,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                          _buildTextField(
+                            'Nama Guru (Opsional)',
+                            _namaGuruController,
+                            'Contoh: Pak Budi',
+                            Icons.person_outline,
+                          ),
+                          const SizedBox(height: 16),
+                          if (_timeOptions[_selectedHari]?.isNotEmpty == true)
+                            Row(
                               children: [
-                                if (_errorMessage != null) ...[
-                                  Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: Colors.red[50],
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: Colors.red[200]!,
-                                      ),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                          Icons.error_outline,
-                                          color: Colors.red[800],
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text(
-                                            _errorMessage!,
-                                            style: TextStyle(
-                                              color: Colors.red[800],
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(height: 16),
-                                ],
-                                _buildDropdown(
-                                  'Pilih Hari',
-                                  _selectedHari,
-                                  _hariList,
-                                  (v) {
-                                    setState(() {
-                                      _selectedHari = v!;
-                                      _errorMessage = null;
-                                    });
-                                  },
-                                ),
-                                const SizedBox(height: 16),
-                                if (_masterJadwalList.isNotEmpty) ...[
-                                  const Text(
-                                    'Pilih dari Master Data',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: Color(0xFF374151),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Wrap(
-                                    spacing: 8,
-                                    runSpacing: 8,
-                                    children: _masterJadwalList.map((jadwal) {
-                                      final color = _parseColor(
-                                        jadwal['hex_color']!,
-                                      );
-                                      return GestureDetector(
-                                        onTap: () => _selectJadwal(jadwal),
-                                        child: Container(
-                                          padding: const EdgeInsets.all(8),
-                                          decoration: BoxDecoration(
-                                            color: color.withOpacity(0.1),
-                                            borderRadius: BorderRadius.circular(
-                                              8,
-                                            ),
-                                            border: Border.all(color: color),
-                                          ),
-                                          child: Text(
-                                            jadwal['nama_pelajaran']!,
-                                            style: const TextStyle(
-                                              color: Colors.black,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                    }).toList(),
-                                  ),
-                                  const SizedBox(height: 16),
-                                ],
-                                _buildTextField(
-                                  'Nama Kegiatan *',
-                                  _namaKegiatanController,
-                                  'Contoh: Matematika',
-                                  Icons.book,
-                                ),
-                                const SizedBox(height: 16),
-                                _buildTextField(
-                                  'Nama Guru (Opsional)',
-                                  _namaGuruController,
-                                  'Contoh: Pak Budi',
-                                  Icons.person_outline,
-                                ),
-                                const SizedBox(height: 16),
-                                if (_timeOptions.isNotEmpty)
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: _buildTimeDropdown(
-                                          'Waktu Mulai *',
-                                          _selectedWaktuMulai,
-                                          _timeOptions,
-                                          (v) {
-                                            setState(() {
-                                              _selectedWaktuMulai = v;
-                                              if (_selectedWaktuSelesai !=
-                                                      null &&
-                                                  !_isValidTimeSequence(
-                                                    v!,
-                                                    _selectedWaktuSelesai!,
-                                                  )) {
-                                                _selectedWaktuSelesai = null;
-                                              }
-                                              _errorMessage = null;
-                                            });
-                                          },
-                                          Icons.access_time,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: _buildTimeDropdown(
-                                          'Waktu Selesai *',
-                                          _selectedWaktuSelesai,
-                                          _getAvailableEndTimes(),
-                                          (v) => setState(() {
-                                            _selectedWaktuSelesai = v;
-                                            _errorMessage = null;
-                                          }),
-                                          Icons.access_time_filled,
-                                        ),
-                                      ),
-                                    ],
-                                  )
-                                else
-                                  Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: Colors.orange.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: Colors.orange.withOpacity(0.3),
-                                      ),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        const Icon(
-                                          Icons.info_outline,
-                                          color: Colors.orange,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text(
-                                            'Tidak ada waktu tersedia',
-                                            style: TextStyle(
-                                              fontSize: 13,
-                                              color: Colors.orange[700],
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                const SizedBox(height: 16),
-                                const Text(
-                                  'Pilih Warna *',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xFF374151),
+                                Expanded(
+                                  child: _buildTimeDropdown(
+                                    'Waktu Mulai *',
+                                    _selectedWaktuMulai,
+                                    _timeOptions[_selectedHari]!,
+                                    (v) {
+                                      setState(() {
+                                        _selectedWaktuMulai = v;
+                                        if (_selectedWaktuSelesai != null &&
+                                            !_isValidTimeSequence(
+                                              v!,
+                                              _selectedWaktuSelesai!,
+                                            )) {
+                                          _selectedWaktuSelesai = null;
+                                        }
+                                      });
+                                    },
+                                    Icons.access_time,
                                   ),
                                 ),
-                                const SizedBox(height: 12),
-                                _buildColorSelection(),
-                                const SizedBox(height: 8),
-                                Text(
-                                  '* Wajib diisi',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey[600],
-                                    fontStyle: FontStyle.italic,
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: _buildTimeDropdown(
+                                    'Waktu Selesai *',
+                                    _selectedWaktuSelesai,
+                                    _getAvailableEndTimes(),
+                                    (v) => setState(
+                                      () => _selectedWaktuSelesai = v,
+                                    ),
+                                    Icons.access_time_filled,
                                   ),
                                 ),
                               ],
+                            )
+                          else
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: Colors.orange.withOpacity(0.3),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.info_outline,
+                                    color: Colors.orange,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'Tidak ada waktu untuk hari $_selectedHari',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: Colors.orange[700],
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Pilih Warna *',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF374151),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          _buildColorSelection(),
+                          const SizedBox(height: 8),
+                          Text(
+                            '* Wajib diisi',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
+                  // Footer
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
@@ -769,7 +851,9 @@ class _AddModalState extends State<AddModal> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: ElevatedButton(
-                            onPressed: _isLoading || _timeOptions.isEmpty
+                            onPressed:
+                                _isLoading ||
+                                    _timeOptions[_selectedHari]?.isEmpty == true
                                 ? null
                                 : _addSchedule,
                             style: ElevatedButton.styleFrom(
@@ -840,7 +924,7 @@ class _AddModalState extends State<AddModal> {
                   ),
                 )
                 .toList(),
-            onChanged: _isLoading ? null : onChanged,
+            onChanged: onChanged,
             decoration: const InputDecoration(
               contentPadding: EdgeInsets.symmetric(
                 horizontal: 16,
@@ -987,7 +1071,7 @@ class _AddModalState extends State<AddModal> {
               ),
             ),
             const Icon(
-              Icons.keyboard_arrow_down,
+              Icons.palette_outlined,
               color: Color(0xFF6B7280),
               size: 20,
             ),
